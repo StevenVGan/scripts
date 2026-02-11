@@ -1,5 +1,5 @@
 ---
-layout: default
+layout: tutorial
 title: CUT&RUN Analysis Tutorial
 ---
 
@@ -1062,23 +1062,26 @@ In summary, we have completed the CUT&RUN data analysis workflow, including qual
 
 ### Key Commands Summary
 
-| Tool | Purpose | Key Options |
-|------|---------|-------------|
-| `fasterq-dump` | Download FASTQ from SRA | `--split-files` (paired-end) |
-| `trim_galore` | Trim adapters and low-quality bases | `--paired` `--stringency`, `--length`, `--quality`, `-o` |
-| `fastqc` | Quality control of FASTQ files | `-o` (output directory) |
-| `bowtie2-build` | Build Bowtie2 index from reference genome | N/A |
-| `bowtie2` | Align reads to reference genome | `-x`, `-1`, `-2`, `-S`, `--very-sensitive`, `-p` |
-| `samtools view` | Convert SAM to BAM | `-bS`, `-o` |
-| `samtools sort` | Sort BAM file by genomic coordinates | `-o` |
-| `samtools index` | Index sorted BAM file | N/A |
-| `samtools flagstat` | Generate alignment statistics | N/A |
-| `bamCoverage` | Generate BigWig coverage tracks | `--binSize`, `--normalizeUsing`, `--ignoreDuplicates`, `-p` |
-| `macs3` | Call peaks from aligned reads | `-t`, `-c`, `-f BAMPE`, `-g`, `-n`, `--outdir`, `-q` |
-| `multiqc` | Aggregate QC reports | `-c` (config file) |
-| `annotatePeaks.pl` | Annotate peaks to genomic features | `-gtf` (annotation file) |
-| `computeMatrix` | Create matrix for heatmaps | `-S`, `-R`, `-a`, `-b`, `--referencePoint`, `--skipZeros`, `-p` | 
-| `plotHeatmap` | Plot heatmaps from matrix | `-m`, `-o`, `--colorMap`, `--samplesLabel` |
+<table>
+<thead><tr><th>Tool</th><th>Purpose</th><th>Key Options</th></tr></thead>
+<tbody>
+<tr><td><code>fasterq-dump</code></td><td>Download FASTQ from SRA</td><td><code>--split-files</code> (paired-end)</td></tr>
+<tr><td><code>trim_galore</code></td><td>Trim adapters and low-quality bases</td><td><code>--paired</code> <code>--stringency</code>, <code>--length</code>, <code>--quality</code>, <code>-o</code></td></tr>
+<tr><td><code>fastqc</code></td><td>Quality control of FASTQ files</td><td><code>-o</code> (output directory)</td></tr>
+<tr><td><code>bowtie2-build</code></td><td>Build Bowtie2 index from reference genome</td><td>N/A</td></tr>
+<tr><td><code>bowtie2</code></td><td>Align reads to reference genome</td><td><code>-x</code>, <code>-1</code>, <code>-2</code>, <code>-S</code>, <code>--very-sensitive</code>, <code>-p</code></td></tr>
+<tr><td><code>samtools view</code></td><td>Convert SAM to BAM</td><td><code>-bS</code>, <code>-o</code></td></tr>
+<tr><td><code>samtools sort</code></td><td>Sort BAM file by genomic coordinates</td><td><code>-o</code></td></tr>
+<tr><td><code>samtools index</code></td><td>Index sorted BAM file</td><td>N/A</td></tr>
+<tr><td><code>samtools flagstat</code></td><td>Generate alignment statistics</td><td>N/A</td></tr>
+<tr><td><code>bamCoverage</code></td><td>Generate BigWig coverage tracks</td><td><code>--binSize</code>, <code>--normalizeUsing</code>, <code>--ignoreDuplicates</code>, <code>-p</code></td></tr>
+<tr><td><code>macs3</code></td><td>Call peaks from aligned reads</td><td><code>-t</code>, <code>-c</code>, <code>-f BAMPE</code>, <code>-g</code>, <code>-n</code>, <code>--outdir</code>, <code>-q</code></td></tr>
+<tr><td><code>multiqc</code></td><td>Aggregate QC reports</td><td><code>-c</code> (config file)</td></tr>
+<tr><td><code>annotatePeaks.pl</code></td><td>Annotate peaks to genomic features</td><td><code>-gtf</code> (annotation file)</td></tr>
+<tr><td><code>computeMatrix</code></td><td>Create matrix for heatmaps</td><td><code>-S</code>, <code>-R</code>, <code>-a</code>, <code>-b</code>, <code>--referencePoint</code>, <code>--skipZeros</code>, <code>-p</code></td></tr>
+<tr><td><code>plotHeatmap</code></td><td>Plot heatmaps from matrix</td><td><code>-m</code>, <code>-o</code>, <code>--colorMap</code>, <code>--samplesLabel</code></td></tr>
+</tbody>
+</table>
 ---
 
 ### For Loops for Batch Processing
