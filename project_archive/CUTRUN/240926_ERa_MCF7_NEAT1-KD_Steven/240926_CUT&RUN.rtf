@@ -1,0 +1,129 @@
+Below is the sequencing results of CnR of ERa in MCF7 with NEAT1 KD by dCas9-KRAB & Cas13d with sgRNA targeting NEAT1 and siRNA targeting NEAT1.
+
+Data:
+
+(base) digan@linux01:~/work/raw_seq/240926_LH00444_0204_B22KKKGLT3$ ls -hl
+total 15G
+-rw-r--r-- 1 digan domainusers 288M Sep 28 02:11 SG_273_S1_L008_R1_001.fastq.gz
+-rw-r--r-- 1 digan domainusers 291M Sep 28 02:11 SG_273_S1_L008_R2_001.fastq.gz
+-rw-r--r-- 1 digan domainusers 417M Sep 28 02:11 SG_274_S2_L008_R1_001.fastq.gz
+-rw-r--r-- 1 digan domainusers 419M Sep 28 02:11 SG_274_S2_L008_R2_001.fastq.gz
+-rw-r--r-- 1 digan domainusers 477M Sep 28 02:11 SG_275_S3_L008_R1_001.fastq.gz
+-rw-r--r-- 1 digan domainusers 479M Sep 28 02:11 SG_275_S3_L008_R2_001.fastq.gz
+-rw-r--r-- 1 digan domainusers 420M Sep 28 02:11 SG_276_S4_L008_R1_001.fastq.gz
+-rw-r--r-- 1 digan domainusers 422M Sep 28 02:11 SG_276_S4_L008_R2_001.fastq.gz
+-rw-r--r-- 1 digan domainusers 295M Sep 28 02:11 SG_277_S5_L008_R1_001.fastq.gz
+-rw-r--r-- 1 digan domainusers 297M Sep 28 02:11 SG_277_S5_L008_R2_001.fastq.gz
+-rw-r--r-- 1 digan domainusers 342M Sep 28 02:11 SG_278_S6_L008_R1_001.fastq.gz
+-rw-r--r-- 1 digan domainusers 345M Sep 28 02:11 SG_278_S6_L008_R2_001.fastq.gz
+-rw-r--r-- 1 digan domainusers 290M Sep 28 02:11 SG_279_S7_L008_R1_001.fastq.gz
+-rw-r--r-- 1 digan domainusers 292M Sep 28 02:11 SG_279_S7_L008_R2_001.fastq.gz
+-rw-r--r-- 1 digan domainusers 429M Sep 28 02:11 SG_280_S8_L008_R1_001.fastq.gz
+-rw-r--r-- 1 digan domainusers 433M Sep 28 02:11 SG_280_S8_L008_R2_001.fastq.gz
+-rw-r--r-- 1 digan domainusers 364M Sep 28 02:11 SG_281_S9_L008_R1_001.fastq.gz
+-rw-r--r-- 1 digan domainusers 365M Sep 28 02:11 SG_281_S9_L008_R2_001.fastq.gz
+-rw-r--r-- 1 digan domainusers 343M Sep 28 02:11 SG_282_S10_L008_R1_001.fastq.gz
+-rw-r--r-- 1 digan domainusers 347M Sep 28 02:11 SG_282_S10_L008_R2_001.fastq.gz
+-rw-r--r-- 1 digan domainusers 240M Sep 28 02:11 SG_283_S11_L008_R1_001.fastq.gz
+-rw-r--r-- 1 digan domainusers 241M Sep 28 02:11 SG_283_S11_L008_R2_001.fastq.gz
+-rw-r--r-- 1 digan domainusers 382M Sep 28 02:11 SG_284_S12_L008_R1_001.fastq.gz
+-rw-r--r-- 1 digan domainusers 384M Sep 28 02:11 SG_284_S12_L008_R2_001.fastq.gz
+-rw-r--r-- 1 digan domainusers 423M Sep 28 02:11 SG_285_S13_L008_R1_001.fastq.gz
+-rw-r--r-- 1 digan domainusers 426M Sep 28 02:11 SG_285_S13_L008_R2_001.fastq.gz
+-rw-r--r-- 1 digan domainusers 454M Sep 28 02:11 SG_286_S14_L008_R1_001.fastq.gz
+-rw-r--r-- 1 digan domainusers 458M Sep 28 02:11 SG_286_S14_L008_R2_001.fastq.gz
+-rw-r--r-- 1 digan domainusers 289M Sep 28 02:11 SG_287_S15_L008_R1_001.fastq.gz
+-rw-r--r-- 1 digan domainusers 291M Sep 28 02:11 SG_287_S15_L008_R2_001.fastq.gz
+-rw-r--r-- 1 digan domainusers 494M Sep 28 02:11 SG_288_S16_L008_R1_001.fastq.gz
+-rw-r--r-- 1 digan domainusers 499M Sep 28 02:11 SG_288_S16_L008_R2_001.fastq.gz
+-rw-r--r-- 1 digan domainusers 297M Sep 28 02:11 SG_289_S17_L008_R1_001.fastq.gz
+-rw-r--r-- 1 digan domainusers 299M Sep 28 02:11 SG_289_S17_L008_R2_001.fastq.gz
+-rw-r--r-- 1 digan domainusers 916M Sep 28 02:11 SG_290_S18_L008_R1_001.fastq.gz
+-rw-r--r-- 1 digan domainusers 920M Sep 28 02:11 SG_290_S18_L008_R2_001.fastq.gz
+
+Manifest:
+
+SG-273	1 240918_CnR_mERa_MCF7_CRISPRi-CasRX-RNAi_Ctrl_E2_rep1
+SG-274	2 240918_CnR_mERa_MCF7_CRISPRi-CasRX-RNAi_Ctrl_E2_rep2
+SG-275	3 240918_CnR_mERa_MCF7_CRISPRi-CasRX-RNAi_Ctrl_E2_rep3
+SG-276	4 240918_CnR_mERa_MCF7_CRISPRi-CasRX-RNAi_Ctrl_ICI_rep1
+SG-277	5 240918_CnR_mERa_MCF7_CRISPRi-CasRX-RNAi_Ctrl_ICI_rep2
+SG-278	6 240918_CnR_mERa_MCF7_CRISPRi-CasRX-RNAi_Ctrl_ICI_rep3
+SG-279	7 240918_CnR_mERa_MCF7_CRISPRi-CasRX-RNAi_NEAT1-KD_E2_rep1
+SG-280	8 240918_CnR_mERa_MCF7_CRISPRi-CasRX-RNAi_NEAT1-KD_E2_rep2
+SG-281	9 240918_CnR_mERa_MCF7_CRISPRi-CasRX-RNAi_NEAT1-KD_E2_rep3
+SG-282	10 240918_CnR_mERa_MCF7_CRISPRi-CasRX-RNAi_NEAT1-KD_ICI_rep1
+SG-283	11 240918_CnR_mERa_MCF7_CRISPRi-CasRX-RNAi_NEAT1-KD_ICI_rep2
+SG-284	12 240918_CnR_mERa_MCF7_CRISPRi-CasRX-RNAi_NEAT1-KD_ICI_rep3
+SG-285	13 240918_CnR_rERa_MCF7_CRISPRi-CasRX-RNAi_Ctrl_E2
+SG-286	14 240918_CnR_rERa_MCF7_CRISPRi-CasRX-RNAi_Ctrl_ICI
+SG-287	15 240918_CnR_rERa_MCF7_CRISPRi-CasRX-RNAi_NEAT1-KD_E2
+SG-288	16 240918_CnR_rERa_MCF7_CRISPRi-CasRX-RNAi_NEAT1-KD_ICI
+SG-289	17 240918_CnR_H3K4me3_MCF7_CRISPRi-CasRX-RNAi_Ctrl_E2
+SG-290	18 240918_CnR_IgG_MCF7_CRISPRi-CasRX-RNAi_NEAT1-KD_E2
+
+Soft links:
+
+ln -s ~/work/raw_seq/240926_LH00444_0204_B22KKKGLT3/SG_273_S1_L008_R1_001.fastq.gz SG273_CnR_ERa_MCF7_CRISPRi-CasRX-RNAi_Ctrl_E2_rep1_240926_R1.fastq.gz
+ln -s ~/work/raw_seq/240926_LH00444_0204_B22KKKGLT3/SG_273_S1_L008_R2_001.fastq.gz SG273_CnR_ERa_MCF7_CRISPRi-CasRX-RNAi_Ctrl_E2_rep1_240926_R2.fastq.gz
+ln -s ~/work/raw_seq/240926_LH00444_0204_B22KKKGLT3/SG_274_S2_L008_R1_001.fastq.gz SG274_CnR_ERa_MCF7_CRISPRi-CasRX-RNAi_Ctrl_E2_rep2_240926_R1.fastq.gz
+ln -s ~/work/raw_seq/240926_LH00444_0204_B22KKKGLT3/SG_274_S2_L008_R2_001.fastq.gz SG274_CnR_ERa_MCF7_CRISPRi-CasRX-RNAi_Ctrl_E2_rep2_240926_R2.fastq.gz
+ln -s ~/work/raw_seq/240926_LH00444_0204_B22KKKGLT3/SG_275_S3_L008_R1_001.fastq.gz SG275_CnR_ERa_MCF7_CRISPRi-CasRX-RNAi_Ctrl_E2_rep3_240926_R1.fastq.gz
+ln -s ~/work/raw_seq/240926_LH00444_0204_B22KKKGLT3/SG_275_S3_L008_R2_001.fastq.gz SG275_CnR_ERa_MCF7_CRISPRi-CasRX-RNAi_Ctrl_E2_rep3_240926_R2.fastq.gz
+ln -s ~/work/raw_seq/240926_LH00444_0204_B22KKKGLT3/SG_276_S4_L008_R1_001.fastq.gz SG276_CnR_ERa_MCF7_CRISPRi-CasRX-RNAi_Ctrl_ICI_rep1_240926_R1.fastq.gz
+ln -s ~/work/raw_seq/240926_LH00444_0204_B22KKKGLT3/SG_276_S4_L008_R2_001.fastq.gz SG276_CnR_ERa_MCF7_CRISPRi-CasRX-RNAi_Ctrl_ICI_rep1_240926_R2.fastq.gz
+ln -s ~/work/raw_seq/240926_LH00444_0204_B22KKKGLT3/SG_277_S5_L008_R1_001.fastq.gz SG277_CnR_ERa_MCF7_CRISPRi-CasRX-RNAi_Ctrl_ICI_rep2_240926_R1.fastq.gz
+ln -s ~/work/raw_seq/240926_LH00444_0204_B22KKKGLT3/SG_277_S5_L008_R2_001.fastq.gz SG277_CnR_ERa_MCF7_CRISPRi-CasRX-RNAi_Ctrl_ICI_rep2_240926_R2.fastq.gz
+ln -s ~/work/raw_seq/240926_LH00444_0204_B22KKKGLT3/SG_278_S6_L008_R1_001.fastq.gz SG278_CnR_ERa_MCF7_CRISPRi-CasRX-RNAi_Ctrl_ICI_rep3_240926_R1.fastq.gz
+ln -s ~/work/raw_seq/240926_LH00444_0204_B22KKKGLT3/SG_278_S6_L008_R2_001.fastq.gz SG278_CnR_ERa_MCF7_CRISPRi-CasRX-RNAi_Ctrl_ICI_rep3_240926_R2.fastq.gz
+ln -s ~/work/raw_seq/240926_LH00444_0204_B22KKKGLT3/SG_279_S7_L008_R1_001.fastq.gz SG279_CnR_ERa_MCF7_CRISPRi-CasRX-RNAi_NEAT1-KD_E2_rep1_240926_R1.fastq.gz
+ln -s ~/work/raw_seq/240926_LH00444_0204_B22KKKGLT3/SG_279_S7_L008_R2_001.fastq.gz SG279_CnR_ERa_MCF7_CRISPRi-CasRX-RNAi_NEAT1-KD_E2_rep1_240926_R2.fastq.gz
+ln -s ~/work/raw_seq/240926_LH00444_0204_B22KKKGLT3/SG_280_S8_L008_R1_001.fastq.gz SG280_CnR_ERa_MCF7_CRISPRi-CasRX-RNAi_NEAT1-KD_E2_rep2_240926_R1.fastq.gz
+ln -s ~/work/raw_seq/240926_LH00444_0204_B22KKKGLT3/SG_280_S8_L008_R2_001.fastq.gz SG280_CnR_ERa_MCF7_CRISPRi-CasRX-RNAi_NEAT1-KD_E2_rep2_240926_R2.fastq.gz
+ln -s ~/work/raw_seq/240926_LH00444_0204_B22KKKGLT3/SG_281_S9_L008_R1_001.fastq.gz SG281_CnR_ERa_MCF7_CRISPRi-CasRX-RNAi_NEAT1-KD_E2_rep3_240926_R1.fastq.gz
+ln -s ~/work/raw_seq/240926_LH00444_0204_B22KKKGLT3/SG_281_S9_L008_R2_001.fastq.gz SG281_CnR_ERa_MCF7_CRISPRi-CasRX-RNAi_NEAT1-KD_E2_rep3_240926_R2.fastq.gz
+ln -s ~/work/raw_seq/240926_LH00444_0204_B22KKKGLT3/SG_282_S10_L008_R1_001.fastq.gz SG282_CnR_ERa_MCF7_CRISPRi-CasRX-RNAi_NEAT1-KD_ICI_rep1_240926_R1.fastq.gz
+ln -s ~/work/raw_seq/240926_LH00444_0204_B22KKKGLT3/SG_282_S10_L008_R2_001.fastq.gz SG282_CnR_ERa_MCF7_CRISPRi-CasRX-RNAi_NEAT1-KD_ICI_rep1_240926_R2.fastq.gz
+ln -s ~/work/raw_seq/240926_LH00444_0204_B22KKKGLT3/SG_283_S11_L008_R1_001.fastq.gz SG283_CnR_ERa_MCF7_CRISPRi-CasRX-RNAi_NEAT1-KD_ICI_rep2_240926_R1.fastq.gz
+ln -s ~/work/raw_seq/240926_LH00444_0204_B22KKKGLT3/SG_283_S11_L008_R2_001.fastq.gz SG283_CnR_ERa_MCF7_CRISPRi-CasRX-RNAi_NEAT1-KD_ICI_rep2_240926_R2.fastq.gz
+ln -s ~/work/raw_seq/240926_LH00444_0204_B22KKKGLT3/SG_284_S12_L008_R1_001.fastq.gz SG284_CnR_ERa_MCF7_CRISPRi-CasRX-RNAi_NEAT1-KD_ICI_rep3_240926_R1.fastq.gz
+ln -s ~/work/raw_seq/240926_LH00444_0204_B22KKKGLT3/SG_284_S12_L008_R2_001.fastq.gz SG284_CnR_ERa_MCF7_CRISPRi-CasRX-RNAi_NEAT1-KD_ICI_rep3_240926_R2.fastq.gz
+ln -s ~/work/raw_seq/240926_LH00444_0204_B22KKKGLT3/SG_285_S13_L008_R1_001.fastq.gz SG285_CnR_rERa_MCF7_CRISPRi-CasRX-RNAi_Ctrl_E2_240926_R1.fastq.gz
+ln -s ~/work/raw_seq/240926_LH00444_0204_B22KKKGLT3/SG_285_S13_L008_R2_001.fastq.gz SG285_CnR_rERa_MCF7_CRISPRi-CasRX-RNAi_Ctrl_E2_240926_R2.fastq.gz
+ln -s ~/work/raw_seq/240926_LH00444_0204_B22KKKGLT3/SG_286_S14_L008_R1_001.fastq.gz SG286_CnR_rERa_MCF7_CRISPRi-CasRX-RNAi_Ctrl_ICI_240926_R1.fastq.gz
+ln -s ~/work/raw_seq/240926_LH00444_0204_B22KKKGLT3/SG_286_S14_L008_R2_001.fastq.gz SG286_CnR_rERa_MCF7_CRISPRi-CasRX-RNAi_Ctrl_ICI_240926_R2.fastq.gz
+ln -s ~/work/raw_seq/240926_LH00444_0204_B22KKKGLT3/SG_287_S15_L008_R1_001.fastq.gz SG287_CnR_rERa_MCF7_CRISPRi-CasRX-RNAi_NEAT1-KD_E2_240926_R1.fastq.gz
+ln -s ~/work/raw_seq/240926_LH00444_0204_B22KKKGLT3/SG_287_S15_L008_R2_001.fastq.gz SG287_CnR_rERa_MCF7_CRISPRi-CasRX-RNAi_NEAT1-KD_E2_240926_R2.fastq.gz
+ln -s ~/work/raw_seq/240926_LH00444_0204_B22KKKGLT3/SG_288_S16_L008_R1_001.fastq.gz SG288_CnR_rERa_MCF7_CRISPRi-CasRX-RNAi_NEAT1-KD_ICI_240926_R1.fastq.gz
+ln -s ~/work/raw_seq/240926_LH00444_0204_B22KKKGLT3/SG_288_S16_L008_R2_001.fastq.gz SG288_CnR_rERa_MCF7_CRISPRi-CasRX-RNAi_NEAT1-KD_ICI_240926_R2.fastq.gz
+ln -s ~/work/raw_seq/240926_LH00444_0204_B22KKKGLT3/SG_289_S17_L008_R1_001.fastq.gz SG289_CnR_H3K4me3_MCF7_CRISPRi-CasRX-RNAi_Ctrl_E2_240926_R1.fastq.gz
+ln -s ~/work/raw_seq/240926_LH00444_0204_B22KKKGLT3/SG_289_S17_L008_R2_001.fastq.gz SG289_CnR_H3K4me3_MCF7_CRISPRi-CasRX-RNAi_Ctrl_E2_240926_R2.fastq.gz
+ln -s ~/work/raw_seq/240926_LH00444_0204_B22KKKGLT3/SG_290_S18_L008_R1_001.fastq.gz SG290_CnR_IgG_MCF7_CRISPRi-CasRX-RNAi_NEAT1-KD_E2_240926_R1.fastq.gz
+ln -s ~/work/raw_seq/240926_LH00444_0204_B22KKKGLT3/SG_290_S18_L008_R2_001.fastq.gz SG290_CnR_IgG_MCF7_CRISPRi-CasRX-RNAi_NEAT1-KD_E2_240926_R2.fastq.gz
+
+
+
+
+SG273_CnR_ERa_MCF7_CRISPRi-CasRX-RNAi_Ctrl_E2_rep1_240926.bw
+/mnt/home/digan/work/seq/CUTRUN/240926_ERa_MCF7_NEAT1-KD_Steven/align/track/SG274_CnR_ERa_MCF7_CRISPRi-CasRX-RNAi_Ctrl_E2_rep2_240926.bw
+/mnt/home/digan/work/seq/CUTRUN/240926_ERa_MCF7_NEAT1-KD_Steven/align/track/SG275_CnR_ERa_MCF7_CRISPRi-CasRX-RNAi_Ctrl_E2_rep3_240926.bw
+/mnt/home/digan/work/seq/CUTRUN/240926_ERa_MCF7_NEAT1-KD_Steven/align/track/SG276_CnR_ERa_MCF7_CRISPRi-CasRX-RNAi_Ctrl_ICI_rep1_240926.bw
+/mnt/home/digan/work/seq/CUTRUN/240926_ERa_MCF7_NEAT1-KD_Steven/align/track/SG277_CnR_ERa_MCF7_CRISPRi-CasRX-RNAi_Ctrl_ICI_rep2_240926.bw
+/mnt/home/digan/work/seq/CUTRUN/240926_ERa_MCF7_NEAT1-KD_Steven/align/track/SG278_CnR_ERa_MCF7_CRISPRi-CasRX-RNAi_Ctrl_ICI_rep3_240926.bw
+/mnt/home/digan/work/seq/CUTRUN/240926_ERa_MCF7_NEAT1-KD_Steven/align/track/SG279_CnR_ERa_MCF7_CRISPRi-CasRX-RNAi_NEAT1-KD_E2_rep1_240926.bw
+/mnt/home/digan/work/seq/CUTRUN/240926_ERa_MCF7_NEAT1-KD_Steven/align/track/SG280_CnR_ERa_MCF7_CRISPRi-CasRX-RNAi_NEAT1-KD_E2_rep2_240926.bw
+/mnt/home/digan/work/seq/CUTRUN/240926_ERa_MCF7_NEAT1-KD_Steven/align/track/SG281_CnR_ERa_MCF7_CRISPRi-CasRX-RNAi_NEAT1-KD_E2_rep3_240926.bw
+/mnt/home/digan/work/seq/CUTRUN/240926_ERa_MCF7_NEAT1-KD_Steven/align/track/SG282_CnR_ERa_MCF7_CRISPRi-CasRX-RNAi_NEAT1-KD_ICI_rep1_240926.bw
+/mnt/home/digan/work/seq/CUTRUN/240926_ERa_MCF7_NEAT1-KD_Steven/align/track/SG283_CnR_ERa_MCF7_CRISPRi-CasRX-RNAi_NEAT1-KD_ICI_rep2_240926.bw
+/mnt/home/digan/work/seq/CUTRUN/240926_ERa_MCF7_NEAT1-KD_Steven/align/track/SG284_CnR_ERa_MCF7_CRISPRi-CasRX-RNAi_NEAT1-KD_ICI_rep3_240926.bw
+/mnt/home/digan/work/seq/CUTRUN/240926_ERa_MCF7_NEAT1-KD_Steven/align/track/SG285_CnR_rERa_MCF7_CRISPRi-CasRX-RNAi_Ctrl_E2_240926.bw
+/mnt/home/digan/work/seq/CUTRUN/240926_ERa_MCF7_NEAT1-KD_Steven/align/track/SG286_CnR_rERa_MCF7_CRISPRi-CasRX-RNAi_Ctrl_ICI_240926.bw
+/mnt/home/digan/work/seq/CUTRUN/240926_ERa_MCF7_NEAT1-KD_Steven/align/track/SG287_CnR_rERa_MCF7_CRISPRi-CasRX-RNAi_NEAT1-KD_E2_240926.bw
+/mnt/home/digan/work/seq/CUTRUN/240926_ERa_MCF7_NEAT1-KD_Steven/align/track/SG288_CnR_rERa_MCF7_CRISPRi-CasRX-RNAi_NEAT1-KD_ICI_240926.bw
+/mnt/home/digan/work/seq/CUTRUN/240926_ERa_MCF7_NEAT1-KD_Steven/align/track/SG289_CnR_H3K4me3_MCF7_CRISPRi-CasRX-RNAi_Ctrl_E2_240926.bw
+/mnt/home/digan/work/seq/CUTRUN/240926_ERa_MCF7_NEAT1-KD_Steven/align/track/SG290_CnR_IgG_MCF7_CRISPRi-CasRX-RNAi_NEAT1-KD_E2_240926.bw
+
+
+SG273_CnR_ERa_MCF7_CRISPRi-CasRX-RNAi_Ctrl_E2_rep1_240926.bw SG274_CnR_ERa_MCF7_CRISPRi-CasRX-RNAi_Ctrl_E2_rep2_240926.bw SG275_CnR_ERa_MCF7_CRISPRi-CasRX-RNAi_Ctrl_E2_rep3_240926.bw SG276_CnR_ERa_MCF7_CRISPRi-CasRX-RNAi_Ctrl_ICI_rep1_240926.bw SG277_CnR_ERa_MCF7_CRISPRi-CasRX-RNAi_Ctrl_ICI_rep2_240926.bw SG278_CnR_ERa_MCF7_CRISPRi-CasRX-RNAi_Ctrl_ICI_rep3_240926.bw SG279_CnR_ERa_MCF7_CRISPRi-CasRX-RNAi_NEAT1-KD_E2_rep1_240926.bw SG280_CnR_ERa_MCF7_CRISPRi-CasRX-RNAi_NEAT1-KD_E2_rep2_240926.bw SG281_CnR_ERa_MCF7_CRISPRi-CasRX-RNAi_NEAT1-KD_E2_rep3_240926.bw SG282_CnR_ERa_MCF7_CRISPRi-CasRX-RNAi_NEAT1-KD_ICI_rep1_240926.bw SG283_CnR_ERa_MCF7_CRISPRi-CasRX-RNAi_NEAT1-KD_ICI_rep2_240926.bw SG284_CnR_ERa_MCF7_CRISPRi-CasRX-RNAi_NEAT1-KD_ICI_rep3_240926.bw SG285_CnR_rERa_MCF7_CRISPRi-CasRX-RNAi_Ctrl_E2_240926.bw SG286_CnR_rERa_MCF7_CRISPRi-CasRX-RNAi_Ctrl_ICI_240926.bw SG287_CnR_rERa_MCF7_CRISPRi-CasRX-RNAi_NEAT1-KD_E2_240926.bw SG288_CnR_rERa_MCF7_CRISPRi-CasRX-RNAi_NEAT1-KD_ICI_240926.bw SG289_CnR_H3K4me3_MCF7_CRISPRi-CasRX-RNAi_Ctrl_E2_240926.bw SG290_CnR_IgG_MCF7_CRISPRi-CasRX-RNAi_NEAT1-KD_E2_240926.bw
+
+ERa_Ctrl_E2_rep1 ERa_Ctrl_E2_rep2 ERa_Ctrl_E2_rep3 ERa_Ctrl_ICI_rep1 ERa_Ctrl_ICI_rep2 ERa_Ctrl_ICI_rep3 ERa_NEAT1-KD_E2_rep1 ERa_NEAT1-KD_E2_rep2 ERa_NEAT1-KD_E2_rep3 ERa_NEAT1-KD_ICI_rep1 ERa_NEAT1-KD_ICI_rep2 ERa_NEAT1-KD_ICI_rep3 rERa_Ctrl_E2 rERa_Ctrl_ICI rERa_NEAT1-KD_E2 rERa_NEAT1-KD_ICI H3K4me3 IgG

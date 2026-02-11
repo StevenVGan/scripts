@@ -1,0 +1,8 @@
+# Logs and temp files
+*.log
+*.tmp
+tmp_*
+.DS_Store
+
+# Large binaries in project_archive
+*.pdf

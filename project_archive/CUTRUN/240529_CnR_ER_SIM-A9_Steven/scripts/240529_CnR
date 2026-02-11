@@ -1,0 +1,50 @@
+Below is the sequencing results of CnR of ER in SIM-A9 cells.
+
+Raw data: 
+
+~/work/raw_seq/240709_LH00444_0149_A22NF77LT3$ ls -hl
+total 6.1G
+-rw-r--r-- 1 digan domainusers 333M Jul 11 00:45 SC_214_S36_L001_R1_001.fastq.gz
+-rw-r--r-- 1 digan domainusers 334M Jul 11 00:45 SC_214_S36_L001_R2_001.fastq.gz
+-rw-r--r-- 1 digan domainusers 380M Jul 11 00:45 SC_215_S37_L001_R1_001.fastq.gz
+-rw-r--r-- 1 digan domainusers 380M Jul 11 00:45 SC_215_S37_L001_R2_001.fastq.gz
+-rw-r--r-- 1 digan domainusers 383M Jul 11 00:45 SC_216_S38_L001_R1_001.fastq.gz
+-rw-r--r-- 1 digan domainusers 383M Jul 11 00:45 SC_216_S38_L001_R2_001.fastq.gz
+-rw-r--r-- 1 digan domainusers 486M Jul 11 00:45 SC_217_S39_L001_R1_001.fastq.gz
+-rw-r--r-- 1 digan domainusers 484M Jul 11 00:45 SC_217_S39_L001_R2_001.fastq.gz
+-rw-r--r-- 1 digan domainusers 444M Jul 11 00:45 SC_218_S40_L001_R1_001.fastq.gz
+-rw-r--r-- 1 digan domainusers 446M Jul 11 00:45 SC_218_S40_L001_R2_001.fastq.gz
+-rw-r--r-- 1 digan domainusers 475M Jul 11 00:45 SC_219_S41_L001_R1_001.fastq.gz
+-rw-r--r-- 1 digan domainusers 477M Jul 11 00:45 SC_219_S41_L001_R2_001.fastq.gz
+-rw-r--r-- 1 digan domainusers 608M Jul 11 00:45 SC_220_S42_L001_R1_001.fastq.gz
+-rw-r--r-- 1 digan domainusers 608M Jul 11 00:45 SC_220_S42_L001_R2_001.fastq.gz
+
+
+Manifest:
+
+SG-214	1 240529_CnR_ER_SIM-A9_E2_rep1
+SG-215	2 240529_CnR_ER_SIM-A9_E2_rep2
+SG-216	3 240529_CnR_ER_SIM-A9_ICI_rep1
+SG-217	4 240529_CnR_ER_SIM-A9_ICI_rep2
+SG-218	5 240529_CnR_H3K4me3_SIM-A9_E2
+SG-219	6 240529_CnR_H3K4me3_SIM-A9_ICI
+SG-220	7 240529_CnR_IgG_SIM-A9_ICI
+
+
+Soft links:
+
+ln -s ~/work/raw_seq/240709_LH00444_0149_A22NF77LT3/SC_214_S36_L001_R1_001.fastq.gz SG214_CnR_ER_SIM-A9_E2_rep1_240709_R1.fastq.gz
+ln -s ~/work/raw_seq/240709_LH00444_0149_A22NF77LT3/SC_214_S36_L001_R2_001.fastq.gz SG214_CnR_ER_SIM-A9_E2_rep1_240709_R2.fastq.gz
+ln -s ~/work/raw_seq/240709_LH00444_0149_A22NF77LT3/SC_215_S37_L001_R1_001.fastq.gz SG215_CnR_ER_SIM-A9_E2_rep2_240709_R1.fastq.gz
+ln -s ~/work/raw_seq/240709_LH00444_0149_A22NF77LT3/SC_215_S37_L001_R2_001.fastq.gz SG215_CnR_ER_SIM-A9_E2_rep2_240709_R2.fastq.gz
+ln -s ~/work/raw_seq/240709_LH00444_0149_A22NF77LT3/SC_216_S38_L001_R1_001.fastq.gz SG216_CnR_ER_SIM-A9_ICI_rep1_240709_R1.fastq.gz
+ln -s ~/work/raw_seq/240709_LH00444_0149_A22NF77LT3/SC_216_S38_L001_R2_001.fastq.gz SG216_CnR_ER_SIM-A9_ICI_rep1_240709_R2.fastq.gz
+ln -s ~/work/raw_seq/240709_LH00444_0149_A22NF77LT3/SC_217_S39_L001_R1_001.fastq.gz SG217_CnR_ER_SIM-A9_ICI_rep2_240709_R1.fastq.gz
+ln -s ~/work/raw_seq/240709_LH00444_0149_A22NF77LT3/SC_217_S39_L001_R2_001.fastq.gz SG217_CnR_ER_SIM-A9_ICI_rep2_240709_R2.fastq.gz
+ln -s ~/work/raw_seq/240709_LH00444_0149_A22NF77LT3/SC_218_S40_L001_R1_001.fastq.gz SG218_CnR_H3K4me3_SIM-A9_E2_240709_R1.fastq.gz
+ln -s ~/work/raw_seq/240709_LH00444_0149_A22NF77LT3/SC_218_S40_L001_R2_001.fastq.gz SG218_CnR_H3K4me3_SIM-A9_E2_240709_R2.fastq.gz
+ln -s ~/work/raw_seq/240709_LH00444_0149_A22NF77LT3/SC_219_S41_L001_R1_001.fastq.gz SG219_CnR_H3K4me3_SIM-A9_ICI_240709_R1.fastq.gz
+ln -s ~/work/raw_seq/240709_LH00444_0149_A22NF77LT3/SC_219_S41_L001_R2_001.fastq.gz SG219_CnR_H3K4me3_SIM-A9_ICI_240709_R2.fastq.gz
+ln -s ~/work/raw_seq/240709_LH00444_0149_A22NF77LT3/SC_220_S42_L001_R1_001.fastq.gz SG220_CnR_IgG_SIM-A9_ICI_240709_R1.fastq.gz
+ln -s ~/work/raw_seq/240709_LH00444_0149_A22NF77LT3/SC_220_S42_L001_R2_001.fastq.gz SG220_CnR_IgG_SIM-A9_ICI_240709_R2.fastq.gz
+
