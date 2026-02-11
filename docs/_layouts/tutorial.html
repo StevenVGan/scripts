@@ -8,9 +8,18 @@
     * { box-sizing: border-box; }
     body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; }
     .wrapper { max-width: 900px; margin: 0 auto; padding: 1rem 2rem 3rem; }
-    header { margin-bottom: 1.5rem; padding-bottom: 0.5rem; border-bottom: 1px solid #eee; font-size: 0.9rem; }
-    header a { color: #0366d6; text-decoration: none; }
-    header a:hover { text-decoration: underline; }
+    .page-header { margin-bottom: 1.5rem; }
+    .page-header a { color: #0366d6; text-decoration: none; font-size: 0.9rem; }
+    .page-header a:hover { text-decoration: underline; }
+    .page-title { font-size: 1.75rem; margin: 0 0 0.5rem 0; }
+    .page-description { color: #666; font-size: 0.95rem; margin: 0 0 1rem 0; }
+    #toc { background: #f8f9fa; padding: 1rem 1.5rem; border-radius: 6px; margin: 1.5rem 0; font-size: 0.9rem; }
+    #toc > strong { display: block; margin-bottom: 0.5rem; }
+    #toc ul { list-style: none; padding-left: 0; margin: 0; }
+    #toc > ul > li { margin: 0.4rem 0; }
+    #toc ul ul { padding-left: 1.25rem; margin-top: 0.2rem; }
+    #toc a { color: #0366d6; text-decoration: none; }
+    #toc a:hover { text-decoration: underline; }
     h1 { font-size: 1.75rem; margin-top: 0; }
     h2 { font-size: 1.35rem; margin-top: 2rem; border-bottom: 1px solid #eee; padding-bottom: 0.3rem; }
     h3 { font-size: 1.15rem; margin-top: 1.5rem; }
@@ -23,25 +32,53 @@
     a { color: #0366d6; text-decoration: none; }
     a:hover { text-decoration: underline; }
     hr { border: none; border-top: 1px solid #eee; margin: 2rem 0; }
-    #markdown-toc { background: #f8f9fa; padding: 1rem 1.5rem; border-radius: 6px; margin: 1.5rem 0; font-size: 0.9rem; }
-    #markdown-toc ul { list-style: none; padding-left: 0; margin: 0; }
-    #markdown-toc li { margin: 0.3rem 0; }
-    #markdown-toc ul ul { padding-left: 1.25rem; margin-top: 0.2rem; }
-    #markdown-toc a { color: #0366d6; }
   </style>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/bash.min.js"></script>
-  <script>hljs.highlightAll();</script>
 </head>
 <body>
   <div class="wrapper">
-    <header>
+    <header class="page-header">
       <a href="{{ '/' | relative_url }}">← Back to Tutorials</a>
     </header>
-    <main>
+    <h1 class="page-title">{{ page.title }}</h1>
+    {% if page.description %}
+    <p class="page-description">{{ page.description }}</p>
+    {% endif %}
+    <nav id="toc" aria-label="Table of contents"><strong>Table of Contents</strong></nav>
+    <main id="content">
       {{ content }}
     </main>
   </div>
+  <script>
+    hljs.highlightAll();
+    (function() {
+      var main = document.getElementById('content');
+      var toc = document.getElementById('toc');
+      var headings = main.querySelectorAll('h2, h3');
+      if (headings.length === 0) return;
+      var rootUl = document.createElement('ul');
+      var lastH2Li = null;
+      for (var i = 0; i < headings.length; i++) {
+        var h = headings[i];
+        var level = parseInt(h.tagName.substring(1));
+        var id = h.id || (h.id = 'section-' + i);
+        var li = document.createElement('li');
+        var a = document.createElement('a');
+        a.href = '#' + id;
+        a.textContent = h.textContent;
+        li.appendChild(a);
+        if (level === 2) {
+          rootUl.appendChild(li);
+          lastH2Li = li;
+        } else {
+          var parentUl = lastH2Li ? (lastH2Li.querySelector('ul') || (function(){ var u = document.createElement('ul'); lastH2Li.appendChild(u); return u; })()) : rootUl;
+          parentUl.appendChild(li);
+        }
+      }
+      toc.appendChild(rootUl);
+    })();
+  </script>
 </body>
 </html>
