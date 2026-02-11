@@ -1,0 +1,524 @@
+CUT&RUN Analysis: Mapping Transcription Factor Binding Sites
+
+# This is a note used to documenrt steps for a CUT&RUN analysis workflow. This will become part of the tutorials for the bioinformatics course.
+
+Setup of AWS EC2 Instance for CUT&RUN Analysis
+0. Tag: Add a tag to set terminable=true
+1. Application: Ubuntu Server 24.04 LTS (HVM), SSD Volume Type
+2. Instance Type: m5.xlarge (4 vCPUs, 16 GiB memory)
+3. Key Pair: I used the same key pair as for my other instances
+4. Security Group: BGGN215
+5. Storage: 60 GB General Purpose SSD (gp2)
+
+Connection
+N.B. the username for Ubuntu instances is "ubuntu", not "ec2-user"! Change that in the .ssh/config file before connecting.
+
+Background:
+Cleavage Under Targets and Release Using Nuclease (CUT&RUN) is a powerful technique used to identify genome-wide binding sites of transcription factors, histone modifications, and other DNA-associated proteins. In this workflow, we will analyze CUT&RUN data to map the binding sites of a specific histone modification, H3K27ac, which is associated with active enhancers in the human genome.
+
+The CUT&RUN workflow involves several key steps:
+•	Quality control of raw sequencing reads to identify and remove low-quality data
+•	Read trimming to remove adapter sequences and low-quality base calls
+•	Alignment of reads to a reference genome to determine where each read originated
+•	Peak calling to identify regions of significant enrichment where the protein binds
+•	Visualization and downstream analysis to interpret biological significance
+
+STEP 1: Setting Up the environment
+
+Conda Environment Setup
+# Install Miniconda if not already installed
+    `wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh`
+    `bash Miniconda3-latest-Linux-x86_64.sh`
+
+Answer "yes" and press enter to all prompts during installation. 
+# Close and reopen terminal or source bashrc
+    `source ~/.bashrc` # This reloads the configuration to include conda
+
+Add channels and create environment
+    `conda config --add channels defaults`
+    `conda config --add channels bioconda`
+    `conda config --add channels conda-forge`
+
+Check that channels are in the correct order
+    `conda config --show channels`
+
+Create environment with required packages
+    `conda create -n cutrun fastqc trim-galore bowtie2 macs3 samtools bedtools deeptools sra-tools multiqc homer -y`
+# -y automatically answers yes to prompts
+
+# Error message about Term Service
+To accept these channels' Terms of Service, run the following commands:
+    `conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/main`
+    `conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/r`
+
+# Now I rerun the create command and it works.
+
+Activate the environment
+    `conda activate cutrun`
+
+Check installed packages, e.g. FastQC and Bowtie2
+    `fastqc --version`
+    `bowtie2 --version`
+
+Directory Structure
+Side note: Set up the directory structure for the analysis. I will be working in a main directory called ./cutrun/. I use ./data/ for raw data, ./cleandata/ for trimmed data, ./align/ for alignment results, ./tracks/ for coverage tracks, ./peaks/ for peak calling results, and ./matrix/ for matrices for calculating heatmaps and profiles. There are also subdirectories for tracks, figures, but those will be created later. In addition, I will also need a ~/ref/ for reference genome directory later on. This usually exists already if I have set up the instance for other analyses before.
+
+For now, create the main directories:
+    `mkdir ref`
+    `mkdir cutrun`
+    `cd cutrun`
+    `mkdir data cleandata align peaks matrix tracks`
+
+# From the structure, you can see that ref is outside of cutrun, because it is shared by multiple projects.
+
+
+
+STEP 2: Data Acquisition (revised +1+1+1)
+# STEP 2 is being revised again to use a different dataset.
+
+We will be using CUT&RUN data from the paper "Different modes of engagement with the nucleosome acidic patch yield distinct functional outcomes" [https://www.biorxiv.org/content/10.64898/2026.01.14.699602v1?med=mas]. 
+
+They performed CUT&RUN for a Dot1-like protein Dot5 in S. cerevisiae, which is a member of the Dot1 family of histone methyltransferases that bind nucleosomes via the acidic patch.
+
+"Given the above, we predicted Dot5 would be associated with in vivo
+chromatin, and this was confirmed after cell fractionating and immunoblotting a yeast strain
+expressing Dot5-FLAG from its endogenous locus (Supplemental Figure S4A). However,
+this binding was not targeted to any genomic locations during yeast exponential growth,
+since CUT&RUN failed to identify any regions of Dot5-FLAG enrichment (Supplemental
+Figure S4B)."
+
+Seems like the data would not be very interesting, but at least we can use it to practice the analysis workflow.
+
+Data are available from GEO under accession number GSE313255
+
+There are 4 samples:	
+GSM9364728	IgG Control
+    Type	Version	Created	Size	Location	Name	Free Egress	Access Type
+    fastq	1	2025-12-10	111.4MB	AWS	s3://sra-pub-src-10/SRR36395843/IgG_Control_R1_001.fastq.gz.1	-	Use Cloud Data Delivery
+    fastq	1	2025-12-10	111.3MB	AWS	s3://sra-pub-src-10/SRR36395843/IgG_Control_R2_001.fastq.gz.1	-	Use Cloud Data Delivery
+GSM9364729	anti-H3K4me3
+    Type	Version	Created	Size	Location	Name	Free Egress	Access Type
+    fastq	1	2025-12-10	132.5MB	AWS	s3://sra-pub-src-10/SRR36395842/H3K4me3_R1_001.fastq.gz.1	-	Use Cloud Data Delivery
+    fastq	1	2025-12-10	132.1MB	AWS	s3://sra-pub-src-10/SRR36395842/H3K4me3_R2_001.fastq.gz.1	-	Use Cloud Data Delivery
+GSM9364730	anti-FLAG Control
+    Type	Version	Created	Size	Location	Name	Free Egress	Access Type
+    fastq	1	2025-12-10	109.5MB	AWS	s3://sra-pub-src-10/SRR36395841/anti-FLAG_Control_R1_001.fastq.gz.1	-	Use Cloud Data Delivery
+    fastq	1	2025-12-10	109.4MB	AWS	s3://sra-pub-src-10/SRR36395841/anti-FLAG_Control_R2_001.fastq.gz.1	-	Use Cloud Data Delivery
+GSM9364731	DOT5-FLAG
+    Type    Version	Created	Size	Location	Name	Free Egress	Access Type
+    fastq	1	2025-12-10	133.7MB	AWS	s3://sra-pub-src-10/SRR36395840/DOT5-FLAG_R1_001.fastq.gz.1	-	Use Cloud Data Delivery
+    fastq	1	2025-12-10	133.8MB	AWS	s3://sra-pub-src-10/SRR36395840/DOT5-FLAG_R2_001.fastq.gz.1	-	Use Cloud Data Delivery
+
+We will download the raw data (FASTQ files) from SRA using fasterq-dump. Navigate to the ./data/ directory first.
+    `cd ~/cutrun/data/`
+
+Download the data using fasterq-dump
+    `fasterq-dump SRR36395843 SRR36395842 SRR36395841 SRR36395840 --split-files -O ./`
+
+total 6.2G
+-rw-rw-r-- 1 ubuntu ubuntu 871M Jan 30 21:03 SRR36395840_1.fastq
+-rw-rw-r-- 1 ubuntu ubuntu 871M Jan 30 21:03 SRR36395840_2.fastq
+-rw-rw-r-- 1 ubuntu ubuntu 712M Jan 30 21:02 SRR36395841_1.fastq
+-rw-rw-r-- 1 ubuntu ubuntu 712M Jan 30 21:02 SRR36395841_2.fastq
+-rw-rw-r-- 1 ubuntu ubuntu 853M Jan 30 21:02 SRR36395842_1.fastq
+-rw-rw-r-- 1 ubuntu ubuntu 853M Jan 30 21:02 SRR36395842_2.fastq
+-rw-rw-r-- 1 ubuntu ubuntu 734M Jan 30 21:01 SRR36395843_1.fastq
+-rw-rw-r-- 1 ubuntu ubuntu 734M Jan 30 21:01 SRR36395843_2.fastq
+
+Let's rename them first. 
+
+SRR36395843 -> IgG_Control
+SRR36395842 -> H3K4me3
+SRR36395841 -> FLAG_Control
+SRR36395840 -> DOT5-FLAG
+
+We can do it one by one:
+    `mv SRR36395843_1.fastq IgG_Control_R1.fastq`
+    `mv SRR36395843_2.fastq IgG_Control_R2.fastq`
+    `mv SRR36395842_1.fastq H3K4me3_R1.fastq`
+    `mv SRR36395842_2.fastq H3K4me3_R2.fastq`
+    `mv SRR36395841_1.fastq FLAG_Control_R1.fastq`
+    `mv SRR36395841_2.fastq FLAG_Control_R2.fastq`
+    `mv SRR36395840_1.fastq DOT5-FLAG_R1.fastq`
+    `mv SRR36395840_2.fastq DOT5-FLAG_R2.fastq`
+
+
+Or we can do it in a loop:
+
+(1) Define the files and names in arrays
+    `FILES=("SRR36395843" "SRR36395842" "SRR36395841" "SRR36395840")`
+    `NAMES=("IgG_Control" "H3K4me3" "FLAG_Control" "DOT5-FLAG")`
+    # this creates a variable called FILES that contains all the file names
+    # note that = sign has no spaces around it!
+    # customarily, variables are in uppercase letters, so that they are easily distinguished from commands
+    # If you want to print a variable, use `echo`, e.g. `echo ${FILES[0]}` will print SRR36395843
+    # note how $ and {} are used to access the variable
+
+(2) Loop through the arrays and rename files
+    # for loop syntax: `for i in {start..end}; do <commands>; done` 
+    `for i in ${!FILES[@]}; do
+        mv ${FILES[$i]}_1.fastq ${NAMES[$i]}_R1.fastq
+        mv ${FILES[$i]}_2.fastq ${NAMES[$i]}_R2.fastq
+    done`
+
+(3) Compress the raw FASTQ files to save space
+    `gzip *.fastq`
+    # `gzip` is the command to compress files and `gunzip` is the command to decompress files
+    #`*` is a wildcard that matches all files ending with .fastq
+    # This takes some time ~ 7 minutes.
+    # Most tools can read gzipped files directly, so no need to unzip them for analysis.
+    # You can check the files using `ls -lh` to see the sizes. Should be much smaller now.
+
+
+
+STEP 3: Trimming and Post-Trimming Quality Control
+
+Trim Galore is a wrapper tool that combines Cutadapt and FastQC to automate the trimming of adapter sequences and low-quality bases from sequencing reads. It is particularly useful for preparing data for downstream analysis.
+
+Trim Galore will detect adapter sequences automatically and trim them off. It will also trim low-quality bases from the ends of reads based on a quality threshold (default is Q20). It also processes paired-end data correctly by ensuring that both reads in a pair are trimmed consistently.
+
+Trim Galore command syntax for paired-end data:
+    # z
+    # we can uses some arguments: trim stringency, minimal length, and quality cutoff
+    # they use the syntax: --stringency <value>, --length <value>, --quality <value>
+    # for this, we will use stringency 5, length 30, quality 28, which is more stringent than default
+    # So the full command becomes:
+    # `trim_galore --paired --stringency 5 --length 30 --quality 28 <read1.fastq.gz> <read2.fastq.gz> -o <output_directory>`
+
+
+Navigate to the ./cutrun/ directory first
+    `cd ~/cutrun/`  
+    # Most of the code will be run from this directory, with input data from one of its subdirectories, e.g. ./data/, ./cleandata/, ./align/, etc., and output data written to other subdirectories.
+
+We will perform trimming for all 4 samples in a loop. First, create an array of sample names:
+    `SAMPLES=("IgG_Control" "H3K4me3" "FLAG_Control" "DOT5-FLAG")`
+
+Then, loop through the samples and run Trim Galore:
+    `for SAMPLE in ${SAMPLES[@]}; do
+         
+    done`
+
+
+It automatically determines the adapter sequences:
+
+Output will be written into the directory: /home/ubuntu/cutrun/cleandata/
+
+AUTO-DETECTING ADAPTER TYPE
+===========================
+Attempting to auto-detect adapter type from the first 1 million sequences of the first file (>> IgG_Control_R1.fastq.gz <<)
+
+Found perfect matches for the following adapter sequences:
+Adapter type    Count   Sequence        Sequences analysed      Percentage
+Illumina        2666    AGATCGGAAGAGC   1000000 0.27
+Nextera 0       CTGTCTCTTATA    1000000 0.00
+smallRNA        0       TGGAATTCTCGG    1000000 0.00
+Using Illumina adapter for trimming (count: 2666). Second best hit was Nextera (count: 0)
+
+We can see that it found Illumina adapter sequences, suggesting that the data were generated using Illumina sequencing technology and some adapter sequences were present in the reads. The type of adapter should be consistent for all samples in the same sequencing run. We can check the other samples to confirm ~ 
+
+
+We can also inpect the trimming report for more details.
+
+=== Summary ===
+
+Total reads processed:               3,787,510
+Reads with adapters:                    36,888 (1.0%)
+Reads written (passing filters):     3,787,510 (100.0%)
+
+Total basepairs processed:   189,375,500 bp
+Quality-trimmed:               1,072,131 bp (0.6%)
+Total written (filtered):    186,939,096 bp (98.7%)
+
+Most reads were retained after trimming, indicating that the data quality was generally good!
+
+
+Now that we have trimmed the reads, we can perform quality control using FastQC to assess the quality of the trimmed reads. FastQC provides a quick overview of the quality of sequencing data, including per-base quality scores, GC content, sequence duplication levels, and overrepresented sequences.
+
+We can first inspect the quality of the trimmed reads using FastQC. Make a subdirectory for FastQC output in ./cutrun/cleandata/:
+    `mkdir ./cleandata/fastqc/`
+
+Run FastQC on all gzipped FASTQ files
+    `fastqc ./cleandata/*.gz -o ./cleandata/fastqc/`
+    # -o specifies the output directory
+
+We can either inspect the FastQC results locally by downloading the HTML files, or use an extension in vsCode to view HTML files directly on the EC2 instance. Install "HTML Preview" extension in vsCode, then right click on the HTML file and select "Preview".
+
+
+STEP 4: Alignment to Reference Genome
+
+PRELIMINARY: Download Reference Genome and Build Bowtie2 Index
+We will align the reads to the S. cerevisiae reference genome (SacCer3). Usually in a well managed lab environment, the reference genomes are stored in a shared directory, e.g. ~/ref/. For the practice here, we will download the reference genome and build the Bowtie2 index ourselves.
+
+(1) Creat a subdirectory in ~/ref/ for SacCer3
+    `mkdir ~/ref/sacCer3/`
+    `cd ~/ref/sacCer3/`
+
+(2) Download and unzip the SacCer3 reference genome
+    `wget http://hgdownload.soe.ucsc.edu/goldenPath/sacCer3/bigZips/sacCer3.fa.gz`
+    # `wget` is a command-line utility for downloading files from the web.
+    `gunzip sacCer3.fa.gz`
+
+(3) Build Bowtie2 index
+    `bowtie2-build sacCer3.fa sacCer3`
+    # This will create several index files with prefix "sacCer3"
+    # Check the files using `ls -lh`
+
+SacCer3 is a rather small genome, so building the index should be quick. If you were working with a larger genome, e.g. human or mouse, building the index takes hours, which is why it is usually done beforehand and stored in a shared directory.
+
+
+Now we will align the trimmed reads to the SacCer3 reference genome using Bowtie2. We will perform alignment for all 4 samples in a loop.
+
+Navigate back to the ./cutrun/ directory first
+    `cd ~/cutrun/`
+
+Bowtie2 command syntax for paired-end data:
+    # `bowtie2 -x <index_prefix> -1 <read1.fastq.gz> -2 <read2.fastq.gz> -S <output.sam> --very-sensitive -p <num_threads>`
+    # -x specifies the prefix of the Bowtie2 index files
+    # -1 and -2 specify the paired-end read files
+    # -S specifies the output SAM file
+    # we will use --very-sensitive mode for better alignment sensitivity
+    # -p specifies the number of threads to use for parallel processing, this server has 4 vCPUs, so we can use 4 threads. But to avoid overloading the server, we will use 3 threads instead.
+
+(1) Define GENOME variable for the Bowtie2 index prefix (to avoid repeating the path multiple times)
+    `GENOME=~/ref/sacCer3/sacCer3`
+    # The second sacCer3 is the prefix of the index files.
+
+(2) Loop through the samples and run Bowtie2
+    # SAMPLES array is already defined from previous steps, no need to redefine it.
+    `for SAMPLE in ${SAMPLES[@]}; do
+        bowtie2 -x $GENOME -1 ./cleandata/${SAMPLE}_R1_val_1.fq.gz -2 ./cleandata/${SAMPLE}_R2_val_2.fq.gz -S ./align/${SAMPLE}.sam --very-sensitive -p 3
+    done`
+
+Now it is always scary at this step because alignment can take a long time and bowtie2 does not create any output files until it is finished. To make sure it is running, we can open another terminal and use `top` or `htop` command to monitor CPU usage (type `q` to exit `top` or `htop`).
+
+You can also check the size of the SAM files in ./align/ using `ls -lh ./align/` to see if they are being created and growing in size.
+
+
+STEP 5: Post-Alignment Processing
+
+After alignment, we need to generat statistics about the alignment results, convert SAM files to BAM files, sort and index the BAM files for downstream analysis. The reason we use BAM files instead of SAM files is that BAM files are compressed binary files, which are much smaller in size and more efficient for processing. 
+
+We will use Samtools for these tasks. Samtools is a suite of programs for interacting with high-throughput sequencing data in SAM, BAM, and CRAM formats.
+
+Samtools command syntax:
+(1) Generate alignment statistics
+    # `samtools flagstat <input.sam>` > <output.txt>`
+    # `>` is used to redirect the output to a text file as the default output is printed to the terminal
+    # other programs usually use `-o <output.txt>` to specify output file.
+(2) Convert SAM to BAM
+    # `samtools view -bS <input.sam> -o <output.bam>`
+(3) Sort BAM file
+    # `samtools sort <input.bam> -o <sorted_output.bam>`
+(4) Index BAM file
+    # `samtools index <sorted_output.bam>`
+
+We will perform these steps for all 4 samples in a loop.
+(1) Loop through the samples and run Samtools commands
+    `for SAMPLE in ${SAMPLES[@]}; do
+        samtools flagstat ./align/${SAMPLE}.sam > ./align/${SAMPLE}_flagstat.txt
+        samtools view -bS ./align/${SAMPLE}.sam -o ./align/${SAMPLE}.bam
+        samtools sort ./align/${SAMPLE}.bam -o ./align/${SAMPLE}_sorted.bam
+        samtools index ./align/${SAMPLE}_sorted.bam
+    done`
+
+(2) Check whether the files are created successfully
+    `ls -lh ./align/`
+
+(3) Remove intermediate SAM and unsorted BAM files to save space
+    `for SAMPLE in ${SAMPLES[@]}; do
+        rm ./align/${SAMPLE}.sam
+        rm ./align/${SAMPLE}.bam
+    done`
+
+(4) Check alignment statistics
+    `for SAMPLE in ${SAMPLES[@]}; do
+        cat ./align/${SAMPLE}_flagstat.txt
+    done`
+
+It seems that H3K4me3 has the highest mapping rate (92.18%), while the other samples have lower mapping rates (~65%).
+
+
+STEP 6: Visualization of tracks
+
+We can generate coverage tracks (bigWig files) from the sorted BAM files for visualization in genome browsers like IGV or UCSC Genome Browser. We will use deepTools for this task. deepTools is a suite of tools to process and visualize deep-sequencing data. We will use the `bamCoverage` tool from deepTools to generate bigWig files, with RPKM normalization, 10 bp bin size and remove duplicates.
+
+deepTools command syntax to generate bigWig files:
+    # `bamCoverage -b <input.bam> -o <output.bw> --normalizeUsing RPKM --binSize <bin_size> --ignoreDuplicates -p <num_threads>`
+    # -b specifies the input BAM file
+    # -o specifies the output bigWig file
+    # --normalizeUsing specifies the normalization method, we will use RPKM
+    # --binSize specifies the size of the bins for coverage calculation, we will use 10 bp
+    # --ignoreDuplicates tells the program to ignore duplicate reads
+    # -p specifies the number of threads to use for parallel processing, we will use 3 threads again.
+
+For loop through the samples and run bamCoverage
+    `for SAMPLE in ${SAMPLES[@]}; do
+        bamCoverage -b ./align/${SAMPLE}_sorted.bam -o ./tracks/${SAMPLE}.bw --normalizeUsing RPKM --binSize 10 --ignoreDuplicates -p 3
+    done`
+
+Download the bigWig files to your local computer for visualization in IGV or UCSC Genome Browser ...
+
+From the track, we can tell that the H3K4me3 works well and shows strong enrichment at promoter regions, while the DOT5-FLAG sample does not show any clear enrichment, consistent with the original paper's claim.
+
+
+STEP 7: Peak Calling
+
+For the purpose of this tutorial, we will keep on with the peak calling step. Although the DOT5-FLAG sample does not show any clear peaks, H3K4me3 should show strong peaks.
+
+MACS3 is a widely used peak calling tool for identifying enriched regions in ChIP-seq and CUT&RUN data. We will use MACS3 to call peaks from the aligned BAM files. We will not keep the duplicates for peak calling as well.
+
+MACS3 command syntax for paired-end data:
+    # `macs3 callpeak -t <treatment.bam> -c <control.bam> -f BAMPE -g <genome_size> -n <output_prefix> --outdir <output_directory> -q <qvalue_threshold>`
+    # -t specifies the treatment BAM file
+    # -c specifies the control BAM file
+    # -f specifies the format of the input files, we will use BAMPE for paired-end BAM files
+    # -g specifies the effective genome size, for S. cerevisiae, it is 1.2e7
+    # -n specifies the output prefix for the peak files
+    # --outdir specifies the output directory
+    # -q specifies the q-value threshold for peak calling, we will use 0.01
+
+For H3K4me3 sample, we will use IgG_Control as the control sample.
+    `macs3 callpeak -t ./align/H3K4me3_sorted.bam -c ./align/IgG_Control_sorted.bam -f BAMPE -g 1.2e7 -n H3K4me3 --outdir ./peaks/ -q 0.01`
+For DOT5-FLAG sample, we will use FLAG_Control as the control sample.
+    `macs3 callpeak -t ./align/DOT5-FLAG_sorted.bam -c ./align/FLAG_Control_sorted.bam -f BAMPE -g 1.2e7 -n DOT5-FLAG --outdir ./peaks/ -q 0.01`
+
+We can list the number of peaks called for .narrowPeak files:
+    `wc -l ./peaks/*.narrowPeak`
+
+     1 ./peaks/DOT5-FLAG_peaks.narrowPeak
+  3031 ./peaks/H3K4me3_peaks.narrowPeak
+
+As expected, H3K4me3 shows a large number of peaks (3031), while DOT5-FLAG shows only 1 peak, consistent with the original paper's claim that Dot5 does not show specific enrichment in CUT&RUN.
+
+
+STEP 8: Quality Assessment
+
+We will use multiqc to aggregate the quality control results from FastQC, alignment statistics from Samtools, and peak calling results from MACS3 into a single report. This helps us assess the overall quality of the CUT&RUN data and identify any potential issues.
+
+multiqc command syntax:
+    # `multiqc <input_directories> -o <output_directory>`
+    # <input_directories> are the directories containing the QC results to be aggregated
+    # -o specifies the output directory for the multiqc report
+
+Run multiqc on the relevant directories
+    `multiqc .
+
+Now there are two issues. 
+(1) mulqiqc separate {sample}_R1, _R2, _R1_val_1, _R2_val_2, _flagstat fastqc results. We need to combine them first.
+(2) multiqc does not recognize homer annotation results. We need to generate a summary file for homer annotation results.
+
+To address, we need to creat a multiqc.yml file to specify the input files and how to parse them.
+    `nano multiqc.yml`
+
+Contents of multiqc.yml:
+table_sample_merge:
+  "Raw R1": "_R1"
+  "Raw R2": "_R2"
+  "Trimmed R1": "_R1_val_1"
+  "Trimmed R2": "_R2_val_2"
+  "Alignment": "_flagstat"
+
+And save the file.
+Run multiqc with the custom config file
+    `multiqc . -o ./multiqc/ -c multiqc.yml`
+
+
+
+STEP 9: Annotation of Peaks
+
+We can use HOMER to annotate the called peaks to genomic features such as promoters, exons, introns, intergenic regions, etc. This helps us understand the distribution of the peaks across different genomic regions.
+
+In order to use HOMER for peak annotation, we need a gene annotation file in GTF format for S. cerevisiae. We can download it from Ensembl or UCSC.
+
+(1) Download the SacCer3 GTF file
+    `cd ~/ref`
+    `wget https://hgdownload.soe.ucsc.edu/goldenPath/sacCer3/bigZips/genes/sacCer3.ensGene.gtf.gz`
+    `gunzip sacCer3.ensGene.gtf.gz`
+(2) Configure HOMER to use the SacCer3 genome and annotation
+    `perl ~/miniconda3/envs/cutrun/share/homer/configureHomer.pl -install sacCer3`
+    # receive this message when I run the annotatePeaks.pl command for the first time...
+    # This will set up the necessary files for SacCer3 in HOMER
+
+
+HOMER command syntax to annotate peaks:
+    # `annotatePeaks.pl <peak_file> <genome> -gtf <annotation_file> > <output.txt>`
+    # <peak_file> is the input peak file in BED format
+    # <genome> is the genome version, for S. cerevisiae, it is sacCer3
+    # -gtf specifies the gene annotation file in GTF format
+    # > is used to redirect the output to a text file
+
+Annotate H3K4me3 peaks
+    `annotatePeaks.pl ./peaks/H3K4me3_peaks.narrowPeak sacCer3 -gtf ~/ref/sacCer3.ensGene.gtf > ./peaks/H3K4me3_peaks_annotated.txt`
+
+Now we can inspect the annotated peak file ./peaks/H3K4me3_peaks_annotated.txt to see the distribution of peaks across genomic features. The output file contains columns such as peak coordinates, annotation (e.g., promoter, exon, intron), distance to the nearest TSS, gene name, etc. For practice, let's print the Percentage of each genomic feature, which is in column 8. We want to exclude the "(XXX)" part from the annotation.
+
+    `cut -f8 ./peaks/H3K4me3_peaks_annotated.txt | sed 's/ (.*)//' | sort | uniq -c`
+    # cut extracts column 8
+    # sed removes the (XXX) part using regular expression which matches "space ( any characters )"
+    # sort sorts the annotations
+    # uniq -c counts the unique annotations
+
+Results:
+      1 Annotation
+      6 Intergenic
+    620 TTS
+    134 exon
+      3 intron
+   2268 promoter-TSS
+
+Annotation is the header. H3K4me3 peaks are mostly located at promoter-TSS regions (2268 peaks), consistent with the known function of H3K4me3 as a mark of active promoters.
+
+
+
+
+STEP 10: Plotting Heatmaps and Profiles
+
+We can use deepTools to plot heatmaps and profiles of the CUT&RUN signal around the called peaks. This helps visualize the enrichment patterns of the histone modification across the genome.
+
+First, we will create a matrix of signal values around the peaks using `computeMatrix` tool from deepTools.
+deepTools command syntax to compute matrix:
+    # `computeMatrix reference-point -S <bigwig_files> -R <peak_file> -a <upstream_distance> -b <downstream_distance> -o <output_matrix.gz> --referencePoint center --skipZeros -p <num_threads>`
+    # -S specifies the input bigWig files, use space to separate multiple files
+    # -R specifies the peak file in BED format
+    # -a specifies the distance upstream of the peak center to include
+    # -b specifies the distance downstream of the peak center to include
+    # -o specifies the output matrix file
+    # --referencePoint center tells the program to center the regions at the peak centers
+    # --skipZeros tells the program to skip regions with zero signal
+    # -p specifies the number of threads to use for parallel processing
+
+We will plot all four samples together for comparison, and use H3K4me3 peaks as the reference regions.
+    `computeMatrix reference-point -S ./tracks/IgG_Control.bw ./tracks/H3K4me3.bw ./tracks/FLAG_Control.bw ./tracks/DOT5-FLAG.bw -R ./peaks/H3K4me3_peaks.narrowPeak -a 2000 -b 2000 -o ./matrix/cutrun_matrix.gz --referencePoint center --skipZeros -p 3`
+
+Next, we will plot the heatmap using `plotHeatmap` tool from deepTools.
+deepTools command syntax to plot heatmap:
+    # `plotHeatmap -m <input_matrix.gz> -o <output_heatmap.png> --colorMap <color_map> --samplesLabel <labels>`
+    # -m specifies the input matrix file
+    # -o specifies the output heatmap image file
+    # --colorMap specifies the color map to use for the heatmap
+    # --samplesLabel specifies the labels for each sample, use space to separate multiple labels
+
+To plot the heatmap:
+    `plotHeatmap -m ./matrix/cutrun_matrix.gz -o ./matrix/cutrun_heatmap.png --colorMap Reds --samplesLabel IgG_Control H3K4me3 FLAG_Control DOT5-FLAG`
+
+
+Now we can view the heatmap image file ./matrix/cutrun_heatmap.png to see the enrichment patterns of the samples around the H3K4me3 peaks. To futher gain insights to the patterns of H3K4me3 on genes. We can also plot it on TSS of genes using appropriate reference regions. We download a bed file of TSS regions from UCSC Table Browser for SacCer3, and use it as reference regions to plot heatmap and profile for H3K4me3 sample only. It is available from EPDnew database as well.
+
+Download the TSS bed file
+    `cd ~/ref`
+    `wget -O sacCer3.EPDnew.TSS.bed   https://epd.expasy.org/ftp/epdnew/S_cerevisiae/current/Sc_EPDnew.bed`
+
+This file is however format by space delimiter, we need to convert it to tab delimiter for deepTools.
+    `sed -i 's/ /\t/g' sacCer3.EPDnew.TSS.bed`
+    # -i tells sed to edit the file in place
+
+
+Navigate back to ./cutrun/ directory and compute matrix for H3K4me3 on TSS regions
+    `cd ~/cutrun/`
+    `computeMatrix reference-point -S ./tracks/IgG_Control.bw ./tracks/H3K4me3.bw ./tracks/FLAG_Control.bw ./tracks/DOT5-FLAG.bw -R ~/ref/sacCer3.EPDnew.TSS.bed -a 1000 -b 1000 -o ./matrix/cutrun_TSS.gz --referencePoint center --skipZeros -p 3`
+
+Plot heatmap for H3K4me3 on TSS regions
+    `plotHeatmap -m ./matrix/cutrun_TSS.gz -o ./matrix/cutrun_TSS_heatmap.png --colorMap Reds --samplesLabel IgG_Control H3K4me3 FLAG_Control DOT5-FLAG`
+
+
+In summary, we have completed the CUT&RUN data analysis workflow, including quality control, trimming, alignment, peak calling, annotation, and visualization. This workflow can be adapted for other CUT&RUN datasets with appropriate modifications based on the specific experimental design and biological questions. This tutorial provides a comprehensive guide to analyzing CUT&RUN data using commonly used bioinformatics tools and best practices.
