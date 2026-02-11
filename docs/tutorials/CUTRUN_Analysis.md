@@ -11,6 +11,9 @@ title: CUT&RUN Analysis Tutorial
 
 **Objective:** Learn how to analyze CUT&RUN sequencing data using command-line tools on an AWS EC2 instance. This tutorial covers data acquisition, quality control, read alignment, peak calling, and visualization.
 
+## Table of Contents
+{:toc}
+
 ---
 
 ## Background
