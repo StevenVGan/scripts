@@ -29,14 +29,3 @@ Each tutorial lives in its own subdirectory under `tutorials/` so files stay org
      nav_pages:
        - tutorials/your_tutorial/index.md
    ```
-
-## Preview locally
-
-```bash
-cd docs
-bundle init
-bundle add jekyll jekyll-feed jekyll-seo-tag
-bundle exec jekyll serve
-```
-
-Then open http://localhost:4000.
