@@ -1,7 +1,7 @@
 ---
 layout: page
 title: CUT&RUN Analysis Tutorial
-permalink: /
+permalink: /tutorials/cutrun/
 ---
 
 **Author:** Steven Gan · **Date:** February 2026
@@ -1140,5 +1140,7 @@ Then from AWS Console:
 ---
 
 **Pipeline Scripts:** See the repository root for the standard analysis pipeline (`pipeline/cutrun/`).
+
+**Other tutorials:** [Mini Lecture — Explorative Analysis Based on a Research Paper](/tutorials/mini_lecture/) (R: CTCF ARM analysis, AlphaFold, RIP-seq).
 
 **Congratulations on completing the CUT&RUN analysis tutorial!**

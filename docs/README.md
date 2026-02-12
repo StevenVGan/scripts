@@ -12,19 +12,22 @@ This folder is the source for GitHub Pages. Uses the **[Minima](https://github.c
 
 ## Adding new tutorials
 
-1. Create `tutorials/YourTutorial.md` with front matter:
+Each tutorial lives in its own subdirectory under `tutorials/` so files stay organized:
+
+1. Create `tutorials/your_tutorial/index.md` with front matter:
    ```yaml
    ---
    layout: page
    title: Your Tutorial Title
-   permalink: /tutorials/YourTutorial/
+   permalink: /tutorials/your_tutorial/
    ---
    ```
-2. Add to `_config.yml` under `minima.nav_pages` if you want it in the header:
+2. Place tutorial-specific assets (images, data files) in the same folder.
+3. Add to `_config.yml` under `minima.nav_pages` if you want it in the header:
    ```yaml
    minima:
      nav_pages:
-       - tutorials/YourTutorial.md
+       - tutorials/your_tutorial/index.md
    ```
 
 ## Preview locally
