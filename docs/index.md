@@ -4,8 +4,6 @@ title: Tutorials
 permalink: /
 ---
 
-# Tutorials
-
 Course tutorials for sequencing and explorative analysis.
 
 ## Available tutorials
@@ -18,4 +16,4 @@ Course tutorials for sequencing and explorative analysis.
 
 ## Pipeline Scripts
 
-See the repository root for the standard analysis pipeline (`pipeline/cutrun/`).
+See the repository root for the standard analysis pipeline for CUT&RUN (`pipeline/cutrun/`).
