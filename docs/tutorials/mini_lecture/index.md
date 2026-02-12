@@ -1,7 +1,7 @@
 ---
 layout: page
-title: Mini Lecture — Explorative Analysis Based on a Research Paper
-author: Steven
+title: A Mini Explorative Analysis
+author: Steven Gan
 permalink: /tutorials/mini_lecture/
 ---
 
