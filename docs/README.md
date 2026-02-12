@@ -29,3 +29,9 @@ Each tutorial lives in its own subdirectory under `tutorials/` so files stay org
      nav_pages:
        - tutorials/your_tutorial/index.md
    ```
+4. Add the tutorial to the index page:
+   ```markdown
+   ## Available tutorials
+
+   - **[Your Tutorial](scripts/tutorials/your_tutorial/)** — Your tutorial description.
+   ```

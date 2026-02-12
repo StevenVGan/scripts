@@ -9,5 +9,5 @@ plugins:
 
 minima:
   nav_pages:
-    - scripts/tutorials/cutrun/index.md
-    - scripts/tutorials/mini_lecture/index.md
+    - tutorials/cutrun/index.md
+    - tutorials/mini_lecture/index.md
