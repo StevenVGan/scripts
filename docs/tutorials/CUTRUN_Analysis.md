@@ -2,15 +2,9 @@
 layout: tutorial
 title: CUT&RUN Analysis Tutorial
 description: Learn how to analyze CUT&RUN sequencing data using command-line tools on an AWS EC2 instance.
+author: Steven Gan
+date: February 2026
 ---
-
-# CUT&RUN Analysis Tutorial: Mapping Histone Modifications and Transcription Factor Binding Sites
-
-**Author:** Steven Gan
-
-**Date:** February 2026
-
-**Objective:** Learn how to analyze CUT&RUN sequencing data using command-line tools on an AWS EC2 instance. This tutorial covers data acquisition, quality control, read alignment, peak calling, and visualization.
 
 
 ## Background
