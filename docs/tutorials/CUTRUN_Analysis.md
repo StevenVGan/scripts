@@ -1,11 +1,13 @@
 ---
-layout: tutorial
+layout: default
 title: CUT&RUN Analysis Tutorial
-description: Learn how to analyze CUT&RUN sequencing data using command-line tools on an AWS EC2 instance.
-author: Steven Gan
-date: February 2026
 ---
 
+**Author:** Steven Gan · **Date:** February 2026
+
+**Objective:** Learn how to analyze CUT&RUN sequencing data using command-line tools on an AWS EC2 instance. This tutorial covers data acquisition, quality control, read alignment, peak calling, and visualization.
+
+---
 
 ## Background
 

@@ -1,6 +1,6 @@
 # GitHub Pages (Tutorials)
 
-This folder is the source for GitHub Pages. When enabled, it renders as HTML at `https://<username>.github.io/<repo>/`.
+This folder is the source for GitHub Pages. Uses the **[Just the Docs](https://just-the-docs.github.io/just-the-docs/)** theme — a Jekyll documentation theme with built-in sidebar, TOC, collapsible nav, and code highlighting.
 
 ## Enable GitHub Pages
 
@@ -10,21 +10,28 @@ This folder is the source for GitHub Pages. When enabled, it renders as HTML at 
 4. **Branch**: `main` (or your default) → **Folder**: `/docs`
 5. **Save** — GitHub will build and publish within a few minutes.
 
-## Verify rendering
+## Adding new tutorials
 
-1. After deployment, visit `https://<username>.github.io/<repo>/` (e.g. `https://digan.github.io/scripts/`).
-2. The index should list the CUT&RUN tutorial; the link should load the full tutorial as HTML.
-3. Build status: **Settings** → **Pages** shows the deployment status; **Actions** tab shows build logs if something fails.
+1. Create `tutorials/YourTutorial.md` with front matter:
+   ```yaml
+   ---
+   layout: default
+   title: Your Tutorial Title
+   ---
+   ```
+2. Add to `_config.yml` under `nav`:
+   ```yaml
+   - title: Your Tutorial
+     url: /tutorials/YourTutorial/
+   ```
 
-## Preview locally (optional)
-
-To preview before pushing:
+## Preview locally
 
 ```bash
 cd docs
 bundle init
-bundle add jekyll github-pages
+bundle add jekyll jekyll-remote-theme just-the-docs
 bundle exec jekyll serve
 ```
 
-Then open http://localhost:4000 (or the URL Jekyll prints).
+Then open http://localhost:4000.

@@ -1,3 +1,15 @@
-theme: jekyll-theme-minimal
-title: "Analysis Scripts & Tutorials"
-description: "CUT&RUN and sequencing analysis pipelines with course tutorials"
+title: Analysis Scripts & Tutorials
+description: CUT&RUN and sequencing analysis pipelines with course tutorials
+
+remote_theme: just-the-docs/just-the-docs
+
+plugins:
+  - jekyll-remote-theme
+
+nav:
+  - title: Home
+    url: /
+  - title: Tutorials
+    children:
+      - title: CUT&RUN Analysis
+        url: /tutorials/CUTRUN_Analysis/

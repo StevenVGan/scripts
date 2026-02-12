@@ -9,7 +9,7 @@ Course tutorials for sequencing analysis.
 
 ## CUT&RUN
 
-- **[CUT&RUN Analysis](tutorials/CUTRUN_Analysis.html)** — Full tutorial: mapping histone modifications and transcription factor binding sites (AWS EC2, conda, trim, align, peak call, visualize).
+- **[CUT&RUN Analysis](tutorials/CUTRUN_Analysis)** — Full tutorial: mapping histone modifications and transcription factor binding sites (AWS EC2, conda, trim, align, peak call, visualize).
 
 ---
 
