@@ -1,15 +1,8 @@
 title: Analysis Scripts & Tutorials
 description: CUT&RUN and sequencing analysis pipelines with course tutorials
 
-remote_theme: just-the-docs/just-the-docs
+theme: minima
 
 plugins:
-  - jekyll-remote-theme
-
-nav:
-  - title: Home
-    url: /
-  - title: Tutorials
-    children:
-      - title: CUT&RUN Analysis
-        url: /tutorials/CUTRUN_Analysis/
+  - jekyll-feed
+  - jekyll-seo-tag

@@ -1,6 +1,7 @@
 ---
-layout: default
+layout: page
 title: CUT&RUN Analysis Tutorial
+permalink: /
 ---
 
 **Author:** Steven Gan · **Date:** February 2026
@@ -1137,5 +1138,7 @@ Then from AWS Console:
 3. Instance State → Stop instance
 
 ---
+
+**Pipeline Scripts:** See the repository root for the standard analysis pipeline (`pipeline/cutrun/`).
 
 **Congratulations on completing the CUT&RUN analysis tutorial!**

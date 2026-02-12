@@ -1,6 +1,6 @@
 # GitHub Pages (Tutorials)
 
-This folder is the source for GitHub Pages. Uses the **[Just the Docs](https://just-the-docs.github.io/just-the-docs/)** theme — a Jekyll documentation theme with built-in sidebar, TOC, collapsible nav, and code highlighting.
+This folder is the source for GitHub Pages. Uses the **[Minima](https://github.com/jekyll/minima)** theme — Jekyll's default theme (simple, minimal).
 
 ## Enable GitHub Pages
 
@@ -15,14 +15,16 @@ This folder is the source for GitHub Pages. Uses the **[Just the Docs](https://j
 1. Create `tutorials/YourTutorial.md` with front matter:
    ```yaml
    ---
-   layout: default
+   layout: page
    title: Your Tutorial Title
+   permalink: /tutorials/YourTutorial/
    ---
    ```
-2. Add to `_config.yml` under `nav`:
+2. Add to `_config.yml` under `minima.nav_pages` if you want it in the header:
    ```yaml
-   - title: Your Tutorial
-     url: /tutorials/YourTutorial/
+   minima:
+     nav_pages:
+       - tutorials/YourTutorial.md
    ```
 
 ## Preview locally
@@ -30,7 +32,7 @@ This folder is the source for GitHub Pages. Uses the **[Just the Docs](https://j
 ```bash
 cd docs
 bundle init
-bundle add jekyll jekyll-remote-theme just-the-docs
+bundle add jekyll jekyll-feed jekyll-seo-tag
 bundle exec jekyll serve
 ```
 
