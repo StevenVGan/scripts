@@ -26,9 +26,9 @@ while read -r prefix newname _rest; do
   src_R1=""
   src_R2=""
 
-  # pattern: SG-339_S1_L003_R1_001.fastq.gz, etc.
-  pattern_R1="${RAW_DIR}/${prefix}_S"*"_R1_001.fastq.gz"
-  pattern_R2="${RAW_DIR}/${prefix}_S"*"_R2_001.fastq.gz"
+  # pattern: SG388*_R1_001.fastq.gz (supports both SG388_S1_L001_... and SG388_CnR_..._S1_L001_...)
+  pattern_R1="${RAW_DIR}/${prefix}"*"_R1_001.fastq.gz"
+  pattern_R2="${RAW_DIR}/${prefix}"*"_R2_001.fastq.gz"
 
   matches_R1=( $pattern_R1 )
   matches_R2=( $pattern_R2 )
