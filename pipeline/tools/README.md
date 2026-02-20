@@ -9,6 +9,8 @@ Reusable utilities for sequencing analysis. Each script has a config block at th
 | **heatmap.sh** | deepTools heatmaps of bigWig tracks over peaks/TSS/genes | Edit config (BASE, BED_FILES, BW_FILES, REGION), then `./heatmap.sh` |
 | **lift_bed.sh** | LiftOver BED files between assemblies (e.g. hg19→hg38) | `./lift_bed.sh INPUT FROM TO OUTPUT [CHAIN]` |
 | **merge_peaks.sh** | Merge multiple BED/HOMER peak files into one | `./merge_peaks.sh OUTPUT.bed INPUT1 [INPUT2 ...]` |
+| **intersect_peaks.sh** | Intersect peaks (regions in ALL inputs) + UpSet plot | `./intersect_peaks.sh [--slop BP] [--names "N1,N2,..."] OUTPUT.bed INPUT1 INPUT2 [...]` |
+| **peak_ops.sh** | Peak set ops: intersect, distinct, or union + UpSet plot | `./peak_ops.sh --mode MODE [--slop BP] [--names "N1,N2,..."] OUTPUT.bed INPUT1 INPUT2 [...]` |
 | **link_fastq.sh** | Symlink/copy raw FASTQs into project `data/` with sample mapping | Edit config (RAW_DIR, DEST_DIR, MAP_FILE), then `./link_fastq.sh` |
 | **subsample_data.sh** | Subsample FASTQs (e.g. 1M reads) for testing | Uses `0_config.sh` from `../cutrun/` or set `CONFIG_FILE=/path/to/project/0_config.sh`; needs `seqtk` |
 
@@ -30,6 +32,25 @@ Reusable utilities for sequencing analysis. Each script has a config block at th
 ```bash
 ./merge_peaks.sh merged.bed rep1_peaks.bed rep2.annotatePeaks.txt
 ```
+
+**Intersect peaks** (regions in ALL inputs; generates UpSet PDF)
+```bash
+./intersect_peaks.sh out.bed rep1.annotatePeaks.txt rep2.annotatePeaks.txt
+./intersect_peaks.sh --slop 250 --names "R1,R2,R3,R4" peaks/ERa_intersect.bed peaks/*.annotatePeaks.txt
+```
+
+**Peak set operations** (intersect / distinct / union; generates UpSet PDF)
+```bash
+# intersect: regions in ALL inputs
+./peak_ops.sh --mode intersect --slop 250 --names "ICI_rep1,ICI_rep2,E2_rep1,E2_rep2" peaks/intersect.bed peaks/*.annotatePeaks.txt
+
+# distinct: regions in exactly the specified sets (partition: in A&B, NOT in C or D)
+./peak_ops.sh --mode distinct --slop 250 --names "ICI_rep1,ICI_rep2,E2_rep1,E2_rep2" peaks/distinct.bed peaks/*.annotatePeaks.txt
+
+# union: regions in ANY input
+./peak_ops.sh --mode union --slop 250 --names "ICI_rep1,ICI_rep2,E2_rep1,E2_rep2" peaks/union.bed peaks/*.annotatePeaks.txt
+```
+Requires: R + UpSetR (`install.packages('UpSetR', repos='https://cloud.r-project.org')`)
 
 **Link FASTQs**
 ```bash

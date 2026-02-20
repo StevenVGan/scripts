@@ -29,10 +29,10 @@ For **new CUT&RUN projects**, use the standard pipeline:
 | Folder | Purpose |
 |--------|---------|
 | **pipeline/cutrun** | Full CUT&RUN upstream: Trim Galore → Bowtie2 → HOMER tags → MACS3/HOMER peaks → QC + MultiQC |
-| **pipeline/tools** | Standalone utilities: heatmaps, BED liftover, merge peaks, link FASTQs, subsample |
+| **pipeline/tools** | Standalone utilities: heatmaps, BED liftover, merge peaks, intersect peaks, link FASTQs, subsample |
 | **project_archive** | One-off scripts from past projects (ChIP-seq, ATAC-seq, PRO-seq, CUT&RUN) |
 | **legacy** | Old MACS2-based pipeline; kept for reference |
-| **experimental** | Testing MACS3, HOMER, SEACR peak callers without control |
+| **experimental** | Testing MACS3, HOMER, SEACR peak callers; peak set modes (ComplexHeatmap UpSet) |
 | **docs** | Tutorials + GitHub Pages source (CUT&RUN analysis) |
 
 ## Requirements
