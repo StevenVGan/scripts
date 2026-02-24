@@ -11,6 +11,7 @@ Reusable utilities for sequencing analysis. Each script has a config block at th
 | **merge_peaks.sh** | Merge multiple BED/HOMER peak files into one | `./merge_peaks.sh OUTPUT.bed INPUT1 [INPUT2 ...]` |
 | **intersect_peaks.sh** | Intersect peaks (regions in ALL inputs) + UpSet plot | `./intersect_peaks.sh [--slop BP] [--names "N1,N2,..."] OUTPUT.bed INPUT1 INPUT2 [...]` |
 | **peak_ops.sh** | Peak set ops: intersect, distinct, or union + UpSet plot | `./peak_ops.sh --mode MODE [--slop BP] [--names "N1,N2,..."] OUTPUT.bed INPUT1 INPUT2 [...]` |
+| **getfasta.sh** | Extract sequences from reference genome for BED regions | `./getfasta.sh [--slop BP] [--no-center] [--tab] OUTPUT.txt INPUT1.bed [INPUT2.bed ...]` |
 | **link_fastq.sh** | Symlink/copy raw FASTQs into project `data/` with sample mapping | Edit config (RAW_DIR, DEST_DIR, MAP_FILE), then `./link_fastq.sh` |
 | **subsample_data.sh** | Subsample FASTQs (e.g. 1M reads) for testing | Uses `0_config.sh` from `../cutrun/` or set `CONFIG_FILE=/path/to/project/0_config.sh`; needs `seqtk` |
 
@@ -51,6 +52,18 @@ Reusable utilities for sequencing analysis. Each script has a config block at th
 ./peak_ops.sh --mode union --slop 250 --names "ICI_rep1,ICI_rep2,E2_rep1,E2_rep2" peaks/union.bed peaks/*.annotatePeaks.txt
 ```
 Requires: R + UpSetR (`install.packages('UpSetR', repos='https://cloud.r-project.org')`)
+
+**Get sequences from BED regions**
+```bash
+# Default: center regions, extend ±500 bp (1001 bp total), output sequences only
+./getfasta.sh seqs.txt peaks.bed
+
+# Use original coordinates, no slop
+./getfasta.sh --no-center --slop 0 seqs.txt peaks.bed
+
+# Tab format (name, seq) for downstream use
+./getfasta.sh --tab seqs.txt rep1.bed rep2.bed
+```
 
 **Link FASTQs**
 ```bash
