@@ -44,6 +44,7 @@ check_cmd fastqc
 echo "=== STEP 1: Trimming + FastQC (no MultiQC) ==="
 echo "[INFO] RAW_DIR:  $RAW_DIR"
 echo "[INFO] TRIM_DIR: $TRIM_DIR"
+echo "[INFO] Mode:     $([ "${SE:-0}" -eq 1 ] && echo "single-end" || echo "paired-end")"
 
 r1_files=( "${RAW_DIR}"/*_R1.fastq.gz )
 if (( ${#r1_files[@]} == 0 )); then
@@ -51,34 +52,51 @@ if (( ${#r1_files[@]} == 0 )); then
   exit 1
 fi
 
-for R1 in "${r1_files[@]}"; do
-  R2="${R1%_R1.fastq.gz}_R2.fastq.gz"
-  if [[ ! -f "$R2" ]]; then
-    echo "[WARN] Missing pair for $R1 (expected $R2). Skipping."
-    continue
-  fi
-
-  sample_name="$(basename "$R1" _R1.fastq.gz)"
-  echo "[STEP1] Trimming: $sample_name"
-
-  trim_galore \
-    --paired \
-    --cores "$TRIM_CPU" \
-    --output_dir "$TRIM_DIR" \
-    -q "$TRIM_QUAL" \
-    --phred33 \
-    --stringency "$TRIM_STRINGENCY" \
-    --length "$TRIM_MIN_LENGTH" \
-    --gzip \
-    "$R1" "$R2"
-done
+if [[ "${SE:-0}" -eq 1 ]]; then
+  # Single-end: no R2, output *_trimmed.fq.gz
+  for R1 in "${r1_files[@]}"; do
+    sample_name="$(basename "$R1" _R1.fastq.gz)"
+    echo "[STEP1] Trimming (single-end): $sample_name"
+    trim_galore \
+      --cores "$TRIM_CPU" \
+      --output_dir "$TRIM_DIR" \
+      -q "$TRIM_QUAL" \
+      --phred33 \
+      --stringency "$TRIM_STRINGENCY" \
+      --length "$TRIM_MIN_LENGTH" \
+      --gzip \
+      "$R1"
+  done
+  trimmed=( "${TRIM_DIR}"/*_trimmed.fq.gz )
+else
+  # Paired-end
+  for R1 in "${r1_files[@]}"; do
+    R2="${R1%_R1.fastq.gz}_R2.fastq.gz"
+    if [[ ! -f "$R2" ]]; then
+      echo "[WARN] Missing pair for $R1 (expected $R2). Skipping."
+      continue
+    fi
+    sample_name="$(basename "$R1" _R1.fastq.gz)"
+    echo "[STEP1] Trimming: $sample_name"
+    trim_galore \
+      --paired \
+      --cores "$TRIM_CPU" \
+      --output_dir "$TRIM_DIR" \
+      -q "$TRIM_QUAL" \
+      --phred33 \
+      --stringency "$TRIM_STRINGENCY" \
+      --length "$TRIM_MIN_LENGTH" \
+      --gzip \
+      "$R1" "$R2"
+  done
+  trimmed=( "${TRIM_DIR}"/*_val_*.fq.gz )
+fi
 
 echo "[STEP1] FastQC on trimmed reads..."
 mkdir -p "${TRIM_DIR}/fastqc"
 
-trimmed=( "${TRIM_DIR}"/*_val_*.fq.gz )
 if (( ${#trimmed[@]} == 0 )); then
-  echo "[ERROR] No trimmed FASTQs (*_val_*.fq.gz) found in $TRIM_DIR"
+  echo "[ERROR] No trimmed FASTQs found in $TRIM_DIR"
   exit 1
 fi
 

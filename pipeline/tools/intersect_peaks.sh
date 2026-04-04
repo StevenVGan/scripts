@@ -145,7 +145,13 @@ done
 if [[ -f "${SCRIPT_DIR}/intersect_peaks_upsetR.R" ]] && command -v Rscript >/dev/null 2>&1; then
   R_ARGS=()
   [[ -n "$UPSET_NAMES" ]] && R_ARGS+=(--names "$UPSET_NAMES")
-  if Rscript "${SCRIPT_DIR}/intersect_peaks_upsetR.R" "${R_ARGS[@]}" "$UPSET_BASE" "${BED_ARGS[@]}"; then
+  if [[ ${#R_ARGS[@]} -gt 0 ]]; then
+    Rscript "${SCRIPT_DIR}/intersect_peaks_upsetR.R" "${R_ARGS[@]}" "$UPSET_BASE" "${BED_ARGS[@]}"
+  else
+    Rscript "${SCRIPT_DIR}/intersect_peaks_upsetR.R" "$UPSET_BASE" "${BED_ARGS[@]}"
+  fi
+  R_EC=$?
+  if [[ $R_EC -eq 0 ]]; then
     echo "UpSet plot -> ${UPSET_BASE}.pdf"
   else
     echo "[WARN] UpSetR failed. Install: install.packages('UpSetR', repos='https://cloud.r-project.org')" >&2

@@ -22,9 +22,10 @@ set -euo pipefail
 #       * log_start            : create a timestamped log file and tee stdout/stderr into it
 #
 # Expected environment
-#   - Run inside the conda env where core tools are available on PATH:
-#       trim_galore, cutadapt, fastqc, bowtie2, samtools, deeptools (bamCoverage),
-#       homer (makeTagDirectory), bedtools, and macs3 (or conda env "macs3").
+#   - By default this file prepends conda env "bio" to PATH (see CONDA_BIO_ENV below)
+#     so trim_galore, cutadapt, fastqc, bowtie2, samtools, deeptools (bamCoverage),
+#     homer (makeTagDirectory), bedtools, macs3, etc. resolve without `conda activate`.
+#   - To skip: CONDA_BIO_ENV="" ./run_all.sh  — or set CONDA_BIO_ENV to another env root.
 #
 # Notes
 #   - This script creates the required output directories if they do not exist.
@@ -35,6 +36,12 @@ set -euo pipefail
 # ---- Base ----
 # Set BASE for your project, or override via env: BASE=/path/to/project ./run_all.sh
 BASE="${BASE:-${HOME}/work/seq/CUTRUN/my_project}"
+
+# ---- Conda env "bio" (prepend to PATH when directory exists) ----
+CONDA_BIO_ENV="${CONDA_BIO_ENV:-${HOME}/miniforge3/envs/bio}"
+if [[ -n "${CONDA_BIO_ENV}" && -d "${CONDA_BIO_ENV}/bin" ]]; then
+  export PATH="${CONDA_BIO_ENV}/bin:${PATH}"
+fi
 
 # ---- Directories ----
 RAW_DIR="${BASE}/data"              # 1_trim_qc input
@@ -49,6 +56,11 @@ MACS3_DIR="${PEAK_DIR}/macs3"        # 4.1 out; 5_qc optional summary
 HOMER_PEAK_DIR="${PEAK_DIR}/homer"   # 4.2 out
 MULTIQC_OUT="${BASE}/multiqc"        # 5_qc
 LOG_DIR="${BASE}/logs"
+
+# ---- Single-end mode (SE=1) vs paired-end (SE=0, default) ----
+# Affects: link_fastq (R2 optional), 1_trim_qc, 2_bowtie2, MACS3 format
+SE="${SE:-0}"
+[[ "$SE" -eq 1 ]] && MACS3_FORMAT="${MACS3_FORMAT:-BAM}" || MACS3_FORMAT="${MACS3_FORMAT:-BAMPE}"
 
 # ---- Step toggles (used by run_all.sh) ----
 RUN_TRIM=1
@@ -90,10 +102,9 @@ PEAKCALL_GROUPS_FILE="${BASE}/peakcall_groups.tsv"
 
 BLACKLIST="${HOME}/work/ref/blacklist/${GENOME}/${GENOME}-blacklist.v2.bed"
 
-# MACS3 (4.1)
+# MACS3 (4.1) — BAMPE for paired-end, BAM for single-end (set above from SE)
 MACS3_CMD="macs3"
 MACS3_GENOMESIZE="hs"
-MACS3_FORMAT="BAMPE"
 MACS3_FDR=0.05
 MACS3_BROAD_CUTOFF=0.10
 

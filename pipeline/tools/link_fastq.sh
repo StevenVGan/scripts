@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# ==== CONFIG: Edit these paths for your project ===============================
-RAW_DIR="$HOME/work/raw_seq/YOUR_RUN_ID"
-DEST_DIR="$HOME/work/seq/CUTRUN/YOUR_PROJECT/data"
-MAP_FILE="$HOME/work/seq/CUTRUN/YOUR_PROJECT/link_sample.tsv"
+# ==== CONFIG: Edit defaults below, or export RAW_DIR / DEST_DIR / MAP_FILE =====
+# (project wrappers can export those vars and exec this script unchanged)
+RAW_DIR="${RAW_DIR:-$HOME/work/raw_seq/YOUR_RUN_ID}"
+DEST_DIR="${DEST_DIR:-$HOME/work/seq/CUTRUN/YOUR_PROJECT/data}"
+MAP_FILE="${MAP_FILE:-$HOME/work/seq/CUTRUN/YOUR_PROJECT/link_sample.tsv}"
 # ==============================================================================
 
 mkdir -p "$DEST_DIR"
@@ -27,16 +28,23 @@ while read -r prefix newname _rest; do
   src_R2=""
 
   # pattern: SG388*_R1_001.fastq.gz (supports both SG388_S1_L001_... and SG388_CnR_..._S1_L001_...)
+  # SE fallback: ENA/SRA-style ${prefix}.fastq.gz (e.g. SRR123.fastq.gz) when Illumina R1 name not found
   pattern_R1="${RAW_DIR}/${prefix}"*"_R1_001.fastq.gz"
   pattern_R2="${RAW_DIR}/${prefix}"*"_R2_001.fastq.gz"
+  se_candidate="${RAW_DIR}/${prefix}.fastq.gz"
 
+  # nullglob: if no Illumina-named files exist, do not treat the glob string as one path
+  shopt -s nullglob
   matches_R1=( $pattern_R1 )
   matches_R2=( $pattern_R2 )
+  shopt -u nullglob
 
   if (( ${#matches_R1[@]} == 1 )); then
     src_R1="${matches_R1[0]}"
+  elif [[ -f "$se_candidate" ]]; then
+    src_R1="$se_candidate"
   else
-    echo "WARNING: ${prefix} R1: expected 1 match, got ${#matches_R1[@]} (pattern: $pattern_R1)" >&2
+    echo "WARNING: ${prefix} R1: expected 1 Illumina *_R1_001 match or ${prefix}.fastq.gz, got ${#matches_R1[@]} (pattern: $pattern_R1)" >&2
   fi
 
   if (( ${#matches_R2[@]} == 1 )); then
@@ -49,23 +57,17 @@ while read -r prefix newname _rest; do
   dest_R1="${DEST_DIR}/${newname}_R1.fastq.gz"
   dest_R2="${DEST_DIR}/${newname}_R2.fastq.gz"
 
-  # ---- Create symlinks if sources exist -------------------------------------
+  # ---- Create symlinks if sources exist (force replace dest) ---------------
   if [[ -n "$src_R1" ]]; then
-    if [[ -e "$dest_R1" ]]; then
-      echo "SKIP: $dest_R1 already exists" >&2
-    else
-      echo "ln -s \"$src_R1\" \"$dest_R1\""
-      ln -s "$src_R1" "$dest_R1"
-    fi
+    echo "ln -sfn \"$src_R1\" \"$dest_R1\""
+    ln -sfn "$src_R1" "$dest_R1"
   fi
 
   if [[ -n "$src_R2" ]]; then
-    if [[ -e "$dest_R2" ]]; then
-      echo "SKIP: $dest_R2 already exists" >&2
-    else
-      echo "ln -s \"$src_R2\" \"$dest_R2\""
-      ln -s "$src_R2" "$dest_R2"
-    fi
+    echo "ln -sfn \"$src_R2\" \"$dest_R2\""
+    ln -sfn "$src_R2" "$dest_R2"
+  else
+    rm -f "$dest_R2"
   fi
 
   # ---- Append enriched line to TMP_LOG --------------------------------------

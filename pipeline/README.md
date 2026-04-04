@@ -20,3 +20,7 @@ See [cutrun/README.md](cutrun/README.md) for step-by-step details.
 Standalone scripts. Most have config blocks at the top; edit paths before running.
 
 See [tools/README.md](tools/README.md) for usage of each tool.
+
+## Recent tool changes
+
+Short changelog for shared utilities lives in the parent [scripts README](../README.md#recent-pipeline-tool-updates) (`link_fastq.sh`, `download_geo_fastq_ena.sh`).

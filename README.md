@@ -48,3 +48,24 @@ Course tutorials in `docs/tutorials/` cover CUT&RUN analysis (AWS setup, QC, ali
 **Enable rendered HTML on GitHub Pages:** Settings → Pages → Source: Deploy from a branch → Branch: `main` → Folder: `/docs`. The site will be at `https://<username>.github.io/<repo>/`.
 
 **Verify:** After pushing, visit the Pages URL and check that the CUT&RUN tutorial link loads correctly. See `docs/README.md` for local preview and troubleshooting.
+
+## Recent pipeline tool updates
+
+### `pipeline/tools/link_fastq.sh`
+
+Shared helper to symlink Illumina-style or ENA-style FASTQs into a project `data/` tree from a TSV map (`prefix` TAB `newname`; optional extra columns ignored; `#` comment lines skipped).
+
+- **Symlinks:** Uses `ln -sfn` so re-runs replace targets without leaving stale names.
+- **PE (Illumina):** Resolves `${RAW_DIR}/${prefix}*_R1_001.fastq.gz` and `*_R2_001.fastq.gz` with `nullglob` so a missing match is not mistaken for a literal path (avoids broken links).
+- **SE / GEO–ENA layout:** If there is no single R1 Illumina match but `${RAW_DIR}/${prefix}.fastq.gz` exists (e.g. `SRR123.fastq.gz`), that file is linked as `${newname}_R1.fastq.gz`.
+- **Stale R2:** If no R2 source is found, any existing `${newname}_R2.fastq.gz` in `DEST_DIR` is removed (cleans up after PE→SE or bad earlier runs).
+- **Config:** Defaults in the script can be overridden with `export RAW_DIR`, `DEST_DIR`, `MAP_FILE` so a project wrapper can `exec` this file unchanged.
+- **Log:** Writes an enriched run log beside the map: `link_sample.log.tsv` (same basename as `MAP_FILE`, `.tsv` → `.log.tsv`) with resolved source paths and timestamp; the map file itself is not overwritten.
+
+Example project pattern: `seq/<assay>/<project>/script/link_fastq.sh` sets the three variables then `exec`s this tool. ChIP-seq GSE59530 (`seq/ChIPseq/MCF7_ER_p65_ChIP_GSE59530`) uses `link_sample.tsv` and `script/link_fastq.sh`; see that project’s `RUNBOOK.txt`.
+
+### `pipeline/tools/download_geo_fastq_ena.sh`
+
+ENA HTTPS downloader for SRR accessions (parallel `curl`, `*.part` then rename, optional `md5sum -c`). Intended when SRA toolkit or campus FTP is awkward; **single-end / one FASTQ per SRR** in the current implementation. Override paths via `DEST_DIR`, `SRR_LIST_FILE`, `LOG_DIR`, `MD5_FILE`, `DOWNLOAD_JOBS`, or pass a list file as the first argument.
+
+Details and copy-paste examples: [pipeline/tools/README.md](pipeline/tools/README.md).

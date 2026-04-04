@@ -55,73 +55,86 @@ echo "=== STEP 2: Bowtie2 -> sorted BAM + bigWig + basic BAM QC ==="
 echo "[INFO] GENOME_INDEX: $GENOME_INDEX"
 echo "[INFO] TRIM_DIR:     $TRIM_DIR"
 echo "[INFO] BAM_DIR:      $BAM_DIR"
-echo "[INFO] TRACK_DIR:    $TRACK_DIR"
+echo "[INFO] TRACK_DIR:   $TRACK_DIR"
+echo "[INFO] Mode:        $([ "${SE:-0}" -eq 1 ] && echo "single-end" || echo "paired-end")"
 
-r1_files=( "${TRIM_DIR}"/*_R1_val_1.fq.gz )
-if (( ${#r1_files[@]} == 0 )); then
-  echo "[ERROR] No *_R1_val_1.fq.gz files found in $TRIM_DIR"
-  exit 1
-fi
+if [[ "${SE:-0}" -eq 1 ]]; then
+  # Single-end: *_trimmed.fq.gz, bowtie2 -U
+  trimmed_files=( "${TRIM_DIR}"/*_trimmed.fq.gz )
+  if (( ${#trimmed_files[@]} == 0 )); then
+    echo "[ERROR] No *_trimmed.fq.gz files found in $TRIM_DIR"
+    exit 1
+  fi
+  for R1 in "${trimmed_files[@]}"; do
+    base="$(basename "$R1" .fq.gz)"
+    if [[ "$base" == *_R1_trimmed ]]; then
+      sample_name="${base%_R1_trimmed}"
+    else
+      sample_name="${base%_trimmed}"
+    fi
+    sorted_bam="${BAM_DIR}/${sample_name}_sorted.bam"
+    bw_file="${TRACK_DIR}/${sample_name}.bw"
+    bt2_log="${BAM_DIR}/${sample_name}_bowtie2.log"
 
-for R1 in "${r1_files[@]}"; do
-  R2="${R1%_R1_val_1.fq.gz}_R2_val_2.fq.gz"
-  if [[ ! -f "$R2" ]]; then
-    echo "[WARN] Missing pair for $R1 (expected $R2). Skipping."
-    continue
+    if [[ -f "$sorted_bam" && -f "${sorted_bam}.bai" ]]; then
+      echo "[STEP2] Found existing BAM+BAI for $sample_name, skipping alignment."
+    else
+      echo "[STEP2] Aligning (single-end): $sample_name"
+      bowtie2 -x "$GENOME_INDEX" -U "$R1" --very-sensitive -p "$BT2_CPU" 2> "$bt2_log" \
+        | samtools sort -@ "$BT2_CPU" -o "$sorted_bam" -
+      samtools index "$sorted_bam"
+    fi
+
+    [[ ! -f "${BAMQC_DIR}/${sample_name}.idxstats.txt" ]] && samtools idxstats "$sorted_bam" > "${BAMQC_DIR}/${sample_name}.idxstats.txt"
+    [[ ! -f "${BAMQC_DIR}/${sample_name}.stats" ]] && samtools stats "$sorted_bam" > "${BAMQC_DIR}/${sample_name}.stats"
+
+    if [[ ! -f "$bw_file" ]]; then
+      bam_cov_args=(-b "$sorted_bam" -o "$bw_file" -p "$BAMCOV_CPU" -bs "$BINSIZE" --effectiveGenomeSize "$GENOMESIZE" --normalizeUsing "$NORMALIZE" --ignoreForNormalization "$IGNORE_CHR" --ignoreDuplicates)
+      [[ -f "${BLACKLIST:-}" ]] && bam_cov_args+=( --blackListFileName "$BLACKLIST" )
+      bamCoverage "${bam_cov_args[@]}"
+    fi
+  done
+  [[ "$DELETE_TRIMMED_AFTER_ALIGN" -eq 1 ]] && rm -f "${TRIM_DIR}"/*_trimmed.fq.gz || true
+else
+  # Paired-end
+  r1_files=( "${TRIM_DIR}"/*_R1_val_1.fq.gz )
+  if (( ${#r1_files[@]} == 0 )); then
+    echo "[ERROR] No *_R1_val_1.fq.gz files found in $TRIM_DIR"
+    exit 1
   fi
 
-  sample_name="$(basename "$R1" _R1_val_1.fq.gz)"
-  sorted_bam="${BAM_DIR}/${sample_name}_sorted.bam"
-  bw_file="${TRACK_DIR}/${sample_name}.bw"
-  bt2_log="${BAM_DIR}/${sample_name}_bowtie2.log"
+  for R1 in "${r1_files[@]}"; do
+    R2="${R1%_R1_val_1.fq.gz}_R2_val_2.fq.gz"
+    if [[ ! -f "$R2" ]]; then
+      echo "[WARN] Missing pair for $R1 (expected $R2). Skipping."
+      continue
+    fi
 
-  if [[ -f "$sorted_bam" && -f "${sorted_bam}.bai" ]]; then
-    echo "[STEP2] Found existing BAM+BAI for $sample_name, skipping alignment."
-  else
-    echo "[STEP2] Aligning: $sample_name"
-    # Stream: bowtie2 -> samtools sort (no SAM on disk)
-    bowtie2 \
-      -x "$GENOME_INDEX" \
-      -1 "$R1" \
-      -2 "$R2" \
-      --very-sensitive \
-      -p "$BT2_CPU" \
-      2> "$bt2_log" \
-    | samtools sort -@ "$BT2_CPU" -o "$sorted_bam" -
+    sample_name="$(basename "$R1" _R1_val_1.fq.gz)"
+    sorted_bam="${BAM_DIR}/${sample_name}_sorted.bam"
+    bw_file="${TRACK_DIR}/${sample_name}.bw"
+    bt2_log="${BAM_DIR}/${sample_name}_bowtie2.log"
 
-    samtools index "$sorted_bam"
-  fi
+    if [[ -f "$sorted_bam" && -f "${sorted_bam}.bai" ]]; then
+      echo "[STEP2] Found existing BAM+BAI for $sample_name, skipping alignment."
+    else
+      echo "[STEP2] Aligning: $sample_name"
+      bowtie2 -x "$GENOME_INDEX" -1 "$R1" -2 "$R2" --very-sensitive -p "$BT2_CPU" 2> "$bt2_log" \
+        | samtools sort -@ "$BT2_CPU" -o "$sorted_bam" -
+      samtools index "$sorted_bam"
+    fi
 
-  # Generate idxstats and stats (even if BAM existed, regenerate if stats are missing)
-  if [[ ! -f "${BAMQC_DIR}/${sample_name}.idxstats.txt" ]]; then
-    samtools idxstats "$sorted_bam" > "${BAMQC_DIR}/${sample_name}.idxstats.txt"
-  fi
-  if [[ ! -f "${BAMQC_DIR}/${sample_name}.stats" ]]; then
-    samtools stats "$sorted_bam" > "${BAMQC_DIR}/${sample_name}.stats"
-  fi
+    [[ ! -f "${BAMQC_DIR}/${sample_name}.idxstats.txt" ]] && samtools idxstats "$sorted_bam" > "${BAMQC_DIR}/${sample_name}.idxstats.txt"
+    [[ ! -f "${BAMQC_DIR}/${sample_name}.stats" ]] && samtools stats "$sorted_bam" > "${BAMQC_DIR}/${sample_name}.stats"
 
-  if [[ -f "$bw_file" ]]; then
-    echo "[STEP2] Found existing bigWig for $sample_name, skipping bamCoverage."
-  else
-    echo "[STEP2] bamCoverage: $sample_name"
-    bam_cov_args=(
-      -b "$sorted_bam"
-      -o "$bw_file"
-      -p "$BAMCOV_CPU"
-      -bs "$BINSIZE"
-      --effectiveGenomeSize "$GENOMESIZE"
-      --normalizeUsing "$NORMALIZE"
-      --ignoreForNormalization "$IGNORE_CHR"
-      --ignoreDuplicates
-    )
-    [[ -f "$BLACKLIST" ]] && bam_cov_args+=( --blackListFileName "$BLACKLIST" )
-    bamCoverage "${bam_cov_args[@]}"
-  fi
-done
+    if [[ ! -f "$bw_file" ]]; then
+      bam_cov_args=(-b "$sorted_bam" -o "$bw_file" -p "$BAMCOV_CPU" -bs "$BINSIZE" --effectiveGenomeSize "$GENOMESIZE" --normalizeUsing "$NORMALIZE" --ignoreForNormalization "$IGNORE_CHR" --ignoreDuplicates)
+      [[ -f "$BLACKLIST" ]] && bam_cov_args+=( --blackListFileName "$BLACKLIST" )
+      bamCoverage "${bam_cov_args[@]}"
+    fi
+  done
 
-if [[ "$DELETE_TRIMMED_AFTER_ALIGN" -eq 1 ]]; then
-  echo "[STEP2] Deleting trimmed FASTQs to save space..."
-  rm -f "${TRIM_DIR}"/*_val_*.fq.gz || true
+  [[ "$DELETE_TRIMMED_AFTER_ALIGN" -eq 1 ]] && rm -f "${TRIM_DIR}"/*_val_*.fq.gz || true
 fi
 
 echo "=== STEP 2 complete ==="
