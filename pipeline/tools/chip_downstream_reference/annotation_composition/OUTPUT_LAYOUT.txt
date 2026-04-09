@@ -1,0 +1,25 @@
+output/
+  README.txt                # quick map of this directory (human-oriented)
+  run_manifest.tsv          # append-only: timestamp, roots, argv
+  tables/
+    macs/
+      counts_long.tsv       # caller, set_id, feature (p65|ER), category, count, fraction, n_peaks
+      counts_wide_p65.tsv   # rows: set_id; cols: category fractions (p65 cobinding + p65 baseline only)
+    homer/
+      counts_long.tsv
+      counts_wide_p65.tsv
+  figures/
+    macs/
+      pie_p65_consensus_A.png
+      pie_ER_consensus_A.png       # omitted if run with --no-er-baseline
+      pie_cobinding_A.png
+      pie_cobinding_B.png
+      pie_cobinding_C.png
+      bars_baseline_vs_cobinding_ABC.png   # p65 + ER (optional) + Cross-condition / Cotreatment / Cotreat-exclusive
+    homer/
+      (same file names)
+
+set_id values (tables): p65_consensus_A, ER_consensus_A, cobinding_A, cobinding_B, cobinding_C
+
+Plot legend / pie subtitles use: p65 consensus (TNF), ER consensus (E2), Cross-condition, Cotreatment,
+Cotreat-exclusive (aligned with conservation-style arm labels).

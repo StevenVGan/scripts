@@ -202,29 +202,43 @@ sets_bar_col <- c("turquoise4")
 matrix_col <- c("slateblue4")
 shade_col <- c("wheat4")
 
+# Colored queries: UpSetR errors with 5+ sets + queries (undefined columns).
 queries <- list()
-for (i in seq_along(expr)) {
-  sets_in_combo <- strsplit(names(expr)[i], "&", fixed = TRUE)[[1]]
-  deg <- length(sets_in_combo)
-  col <- degree_colors[as.character(deg)]
-  if (is.na(col)) col <- "gray50"
-  queries[[i]] <- list(
-    query = UpSetR::intersects,
-    params = as.list(sets_in_combo),
-    color = col,
-    active = TRUE
-  )
+if (n <= 4) {
+  for (i in seq_along(expr)) {
+    sets_in_combo <- strsplit(names(expr)[i], "&", fixed = TRUE)[[1]]
+    deg <- length(sets_in_combo)
+    col <- degree_colors[as.character(deg)]
+    if (is.na(col)) col <- "gray50"
+    queries[[i]] <- list(
+      query = UpSetR::intersects,
+      params = as.list(sets_in_combo),
+      color = col,
+      active = TRUE
+    )
+  }
 }
 
 text_scale <- c(1.5, 1.25, 1.25, 1, 1.7, 1.5)
 upset_data <- UpSetR::fromExpression(expr)
 
-pdf(paste0(out_base, ".pdf"), width = 8, height = 6)
-UpSetR::upset(upset_data,
-              mainbar.y.label = paste0("Peak ", mode, " (count)"),
-              sets.x.label = "Peak count",
-              text.scale = text_scale,
-              sets.bar.color = sets_bar_col,
-              matrix.color = matrix_col, shade.color = shade_col,
-              queries = queries, query.legend = "none")
+pw <- if (n >= 5) 11 else 8
+ph <- if (n >= 5) 7 else 6
+pdf(paste0(out_base, ".pdf"), width = pw, height = ph)
+if (length(queries) > 0) {
+  UpSetR::upset(upset_data,
+                mainbar.y.label = paste0("Peak ", mode, " (count)"),
+                sets.x.label = "Peak count",
+                text.scale = text_scale,
+                sets.bar.color = sets_bar_col,
+                matrix.color = matrix_col, shade.color = shade_col,
+                queries = queries, query.legend = "none")
+} else {
+  UpSetR::upset(upset_data,
+                mainbar.y.label = paste0("Peak ", mode, " (count)"),
+                sets.x.label = "Peak count",
+                text.scale = text_scale,
+                sets.bar.color = sets_bar_col,
+                matrix.color = matrix_col, shade.color = shade_col)
+}
 invisible(dev.off())

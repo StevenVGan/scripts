@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 # Download FASTQs for SRA run accessions (SRR*) from ENA over HTTPS (curl).
+# Location: pipeline/tools/prep/download_geo_fastq_ena.sh
 # Typical source: GEO/SRA metadata compiled into a one-SRR-per-line list.
 # Use when NCBI prefetch/SRA toolkit fails (e.g. TLS issues on some clusters).
 #

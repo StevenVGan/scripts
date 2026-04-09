@@ -35,15 +35,7 @@ source "${SCRIPT_DIR}/0_config.sh"
 
 echo "=== run_all.sh starting ==="
 echo "[INFO] BASE: $BASE"
-
-# You can override toggles via env vars, e.g.:
-# RUN_BOWTIE2=0 ./run_all.sh
-RUN_TRIM="${RUN_TRIM:-1}"
-RUN_BOWTIE2="${RUN_BOWTIE2:-1}"
-RUN_HOMER_TAGS="${RUN_HOMER_TAGS:-1}"
-RUN_PEAK_MACS3="${RUN_PEAK_MACS3:-1}"
-RUN_PEAK_HOMER="${RUN_PEAK_HOMER:-1}"
-RUN_QC="${RUN_QC:-1}"
+echo "[INFO] Toggles: TRIM=$RUN_TRIM BOWTIE2=$RUN_BOWTIE2 TAGS=$RUN_HOMER_TAGS MACS3=$RUN_PEAK_MACS3 HOMER_PEAK=$RUN_PEAK_HOMER QC=$RUN_QC"
 
 if [[ "$RUN_TRIM" -eq 1 ]]; then
   bash "${SCRIPT_DIR}/1_trim_qc.sh"

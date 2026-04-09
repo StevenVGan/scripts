@@ -1,12 +1,13 @@
 #!/usr/bin/env bash
 # Download CnR/Seq FASTQ data from IGM FTP (e.g. submission 1027).
+# Location: pipeline/tools/prep/download_fastq.sh
 # Usage: export FTP_PASSWORD='your_password'; ./download_fastq.sh
 set -euo pipefail
 
 # ==== CONFIG: Edit these for your project =====================================
 # Example: CnR Seq data from submission 1027
 # Sequencing data URL (FTP base, no trailing slash)
-FTP_BASE="ftp://igm-storage.ucsd.edu/260212_LH00444_0470_A233NMNLT3"
+FTP_BASE="ftp://igm-storage.ucsd.edu/260401_LH00444_0498_B235NNMLT4"
 # FTP credentials (password often contains md5sum from sequencing center)
 FTP_USER="rosenfeld"
 # Set via env for security: export FTP_PASSWORD='2Zlgavv9vj'
@@ -15,9 +16,9 @@ FTP_USER="rosenfeld"
 FTP_PASSWORD="2Zlgavv9vj"
 
 # Destination: raw_seq for downloaded data, or project-specific
-DEST_DIR="$HOME/work/raw_seq/260212_LH00444_0470_A233NMNLT3"
-# File prefix filter: sequencing data typically start with SG
-FILE_PREFIX="${FILE_PREFIX:-SG}"
+DEST_DIR="$HOME/work/raw_seq/260401_LH00444_0498_B235NNMLT4"
+# Priyanka / IGM CnR: FASTQs are named PS###_... ; other runs often use SG###
+FILE_PREFIX="${FILE_PREFIX:-PS}"
 # ==============================================================================
 
 if [[ -z "$FTP_PASSWORD" ]]; then

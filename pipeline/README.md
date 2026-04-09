@@ -4,10 +4,13 @@ Main CUT&RUN analysis pipeline and shared utilities.
 
 ## Contents
 
-| Folder | Purpose |
-|--------|---------|
+| Path | Purpose |
+|------|---------|
 | **cutrun/** | Standard CUT&RUN upstream pipeline: trim → align → peak call → QC |
-| **tools/** | Reusable utilities: heatmaps, BED liftover, merge peaks, link FASTQs, subsample |
+| **tools/** | Analysis utilities: heatmaps (`heatmap.sh`), BED liftover, peak set ops, getfasta, subsample; **go_enrichr.py** / **annotation_pie.py** (generic Enrichr + annotation pies); **chip_downstream_reference/** (frozen GSE59530 Method 2 downstream scripts) |
+| **tools/prep/** | Upstream FASTQ prep: IGM FTP + ENA SRR download, Illumina lane merge, symlink into project `data/` |
+
+See **[tools/prep/README.md](tools/prep/README.md)** for download / link workflows before **`1_trim_qc.sh`**.
 
 ## cutrun
 
@@ -23,4 +26,4 @@ See [tools/README.md](tools/README.md) for usage of each tool.
 
 ## Recent tool changes
 
-Short changelog for shared utilities lives in the parent [scripts README](../README.md#recent-pipeline-tool-updates) (`link_fastq.sh`, `download_geo_fastq_ena.sh`).
+Short changelog for shared utilities lives in the parent [scripts README](../README.md#recent-pipeline-tool-updates) (`tools/prep/`).

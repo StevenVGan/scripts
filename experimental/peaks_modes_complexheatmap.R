@@ -100,7 +100,7 @@ if (length(ids_all) > 0) {
   message("BED (", mode, "): ", out_base, ".bed (0 regions)")
 }
 
-# Setting colors (match intersect_peaks_upsetR.R)
+# Setting colors (match peaks_ops_upsetR.R palette)
 # This can also be done with hexadecimal
 main_bar_col <- "violetred4"
 sets_bar_col <- "turquoise4"

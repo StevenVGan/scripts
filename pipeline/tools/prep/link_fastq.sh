@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# Symlink raw FASTQs into project data/ from a TSV map (Illumina *_R1/_R2_001 or SE SRR.fastq.gz).
+# Location: pipeline/tools/prep/link_fastq.sh
 set -euo pipefail
 
 # ==== CONFIG: Edit defaults below, or export RAW_DIR / DEST_DIR / MAP_FILE =====

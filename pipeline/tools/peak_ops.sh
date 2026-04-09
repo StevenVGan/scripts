@@ -6,10 +6,12 @@
 #
 # Options (before positional args):
 #   --mode MODE       Required. One of: intersect | distinct | union
+#   --viz MODE        Post-run plots: none | upset | venn | both. Default: upset
+#                     (venn uses VennDiagram for 2–4 inputs only; skipped when n>4).
 #   --slop BP        Extend each peak by BP bp on both sides. Default: 0
 #   --genome-sizes F Chromosome sizes file for slop (required if --slop > 0).
 #   --merge          Merge overlapping regions in output (intersect/distinct only).
-#   --names "N1,N2,…" Set names for UpSet plot (comma-separated).
+#   --names "N1,N2,…" Set names for UpSet / Venn (comma-separated).
 #
 #   OUTPUT.bed  output BED (intersect/distinct: regions in ALL; union: regions in ANY)
 #   INPUT*     BED files or HOMER .annotatePeaks.txt (chr,start,end from cols 2,3,4)
@@ -25,6 +27,7 @@ GENOME_SIZES="/mnt/share/archive/bkup/ref/genome/hg38/hg38.chrom.sizes"
 MODE=""
 MERGE=0
 UPSET_NAMES=""
+VIZ="${VIZ:-upset}"
 
 # Parse optional flags
 while [[ $# -gt 0 ]]; do
@@ -49,6 +52,10 @@ while [[ $# -gt 0 ]]; do
       UPSET_NAMES="$2"
       shift 2
       ;;
+    --viz)
+      VIZ="$2"
+      shift 2
+      ;;
     -*)
       echo "Unknown option: $1" >&2
       exit 1
@@ -64,6 +71,14 @@ case "$MODE" in
   *)
     echo "Usage: $0 [OPTIONS] --mode intersect|distinct|union OUTPUT.bed INPUT1 INPUT2 [INPUT3 ...]" >&2
     echo "  --mode is required. Use: intersect, distinct, or union." >&2
+    exit 1
+    ;;
+esac
+
+case "$VIZ" in
+  none|upset|venn|both) ;;
+  *)
+    echo "ERROR: --viz must be one of: none, upset, venn, both (got: $VIZ)" >&2
     exit 1
     ;;
 esac
@@ -141,10 +156,12 @@ else
 fi
 mv "$TMP_OUT" "$OUTPUT"
 
-# UpSet plot
+# Optional UpSet / Venn plots (--viz)
 REGION_COUNT=$(count_bed_lines "$OUTPUT")
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 UPSET_BASE="$(dirname "$OUTPUT")/$(basename "$OUTPUT" .bed)_upset"
+# peak_vennDiagram.R writes ${out_base}_venn.pdf
+VENN_BASE="$(dirname "$OUTPUT")/$(basename "$OUTPUT" .bed)"
 TMP_UP=$(mktemp -d)
 BED_ARGS=()
 for i in "${!TMPS[@]}"; do
@@ -152,17 +169,70 @@ for i in "${!TMPS[@]}"; do
   cp "${TMPS[$i]}" "$TMP_UP/${name}.bed"
   BED_ARGS+=("$TMP_UP/${name}.bed")
 done
-if [[ -f "${SCRIPT_DIR}/peaks_ops_upsetR.R" ]] && command -v Rscript >/dev/null 2>&1; then
-  R_ARGS=(--mode "$MODE")
-  [[ -n "$UPSET_NAMES" ]] && R_ARGS+=(--names "$UPSET_NAMES")
-  if Rscript "${SCRIPT_DIR}/peaks_ops_upsetR.R" "${R_ARGS[@]}" "$UPSET_BASE" "${BED_ARGS[@]}"; then
-    echo "UpSet plot -> ${UPSET_BASE}.pdf"
-  else
-    echo "[WARN] peaks_ops_upsetR failed. Install: install.packages('UpSetR', repos='https://cloud.r-project.org')" >&2
+
+run_upset() {
+  if [[ ! -f "${SCRIPT_DIR}/peaks_ops_upsetR.R" ]] || ! command -v Rscript >/dev/null 2>&1; then
+    echo "[WARN] Rscript or peaks_ops_upsetR.R not found" >&2
+    return 1
   fi
-else
-  echo "[WARN] Rscript or peaks_ops_upsetR.R not found" >&2
-fi
+  local R_ARGS=(--mode "$MODE")
+  [[ -n "$UPSET_NAMES" ]] && R_ARGS+=(--names "$UPSET_NAMES")
+  Rscript "${SCRIPT_DIR}/peaks_ops_upsetR.R" "${R_ARGS[@]}" "$UPSET_BASE" "${BED_ARGS[@]}"
+}
+
+# 0 = ok (PDF written); 1 = error; 2 = skipped (n>4)
+run_venn() {
+  if [[ ! -f "${SCRIPT_DIR}/peak_vennDiagram.R" ]] || ! command -v Rscript >/dev/null 2>&1; then
+    echo "[WARN] Rscript or peak_vennDiagram.R not found" >&2
+    return 1
+  fi
+  if [[ "${#INPUTS[@]}" -gt 4 ]]; then
+    echo "[INFO] VennDiagram supports at most 4 sets (${#INPUTS[@]} inputs); skipping Venn (--viz $VIZ)." >&2
+    return 2
+  fi
+  local R_ARGS=()
+  [[ -n "$UPSET_NAMES" ]] && R_ARGS+=(--names "$UPSET_NAMES")
+  if [[ ${#R_ARGS[@]} -gt 0 ]]; then
+    Rscript "${SCRIPT_DIR}/peak_vennDiagram.R" "${R_ARGS[@]}" "$VENN_BASE" "${BED_ARGS[@]}"
+  else
+    Rscript "${SCRIPT_DIR}/peak_vennDiagram.R" "$VENN_BASE" "${BED_ARGS[@]}"
+  fi
+}
+
+case "$VIZ" in
+  none) ;;
+  upset)
+    if run_upset; then
+      echo "UpSet plot -> ${UPSET_BASE}.pdf"
+    else
+      echo "[WARN] peaks_ops_upsetR failed. Install: install.packages('UpSetR', repos='https://cloud.r-project.org')" >&2
+    fi
+    ;;
+  venn)
+    venn_ec=0
+    run_venn || venn_ec=$?
+    if [[ "$venn_ec" -eq 0 ]]; then
+      echo "Venn diagram -> ${VENN_BASE}_venn.pdf"
+    elif [[ "$venn_ec" -ne 2 ]]; then
+      echo "[WARN] peak_vennDiagram.R failed. Install: install.packages('VennDiagram')" >&2
+    fi
+    ;;
+  both)
+    if run_upset; then
+      echo "UpSet plot -> ${UPSET_BASE}.pdf"
+    else
+      echo "[WARN] peaks_ops_upsetR failed. Install: install.packages('UpSetR', repos='https://cloud.r-project.org')" >&2
+    fi
+    venn_ec=0
+    run_venn || venn_ec=$?
+    if [[ "$venn_ec" -eq 0 ]]; then
+      echo "Venn diagram -> ${VENN_BASE}_venn.pdf"
+    elif [[ "$venn_ec" -ne 2 ]]; then
+      echo "[WARN] peak_vennDiagram.R failed. Install: install.packages('VennDiagram')" >&2
+    fi
+    ;;
+esac
+
 rm -rf "$TMP_UP"
 
 rm -f "${TMPS[@]}"

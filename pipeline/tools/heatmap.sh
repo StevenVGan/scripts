@@ -3,14 +3,14 @@ set -euo pipefail
 shopt -s nullglob
 
 ###############################################################################
-# 6_heatmap.sh — Heatmap of tracks vs peak/gene regions
+# heatmap.sh — Heatmap of tracks vs peak/gene regions
 #
 # Purpose
 #   Computes deepTools matrix and plots heatmaps from bigWig tracks over BED
 #   regions (peaks, TSS, or gene bodies). Config-driven; no interactive prompts.
 #
 # Usage
-#   Edit the config block below, then: ./6_heatmap.sh
+#   From pipeline/tools/: edit the config block below, then ./heatmap.sh
 #
 # Output
 #   OUTPUT_DIR/heatmap/, OUTPUT_DIR/sort/, OUTPUT_DIR/matrix/
@@ -114,7 +114,7 @@ fi
 
 mkdir -p "${OUTPUT_DIR}/heatmap" "${OUTPUT_DIR}/sort" "${OUTPUT_DIR}/matrix"
 
-echo "=== 6_heatmap.sh ==="
+echo "=== heatmap.sh ==="
 echo "[CONFIG] BASE:        $BASE"
 echo "[CONFIG] REGION:      $REGION"
 echo "[CONFIG] OUTPUT_NAME: $OUTPUT_NAME"
@@ -247,4 +247,4 @@ for f in "${TEMP_BEDS[@]:-}"; do
   [[ -n "$f" && -f "$f" ]] && rm -f "$f"
 done
 
-echo "=== 6_heatmap.sh finished ==="
+echo "=== heatmap.sh finished ==="

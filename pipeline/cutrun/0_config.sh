@@ -63,12 +63,13 @@ SE="${SE:-0}"
 [[ "$SE" -eq 1 ]] && MACS3_FORMAT="${MACS3_FORMAT:-BAM}" || MACS3_FORMAT="${MACS3_FORMAT:-BAMPE}"
 
 # ---- Step toggles (used by run_all.sh) ----
-RUN_TRIM=1
-RUN_BOWTIE2=1
-RUN_HOMER_TAGS=1
-RUN_PEAK_MACS3=0
-RUN_PEAK_HOMER=1
-RUN_QC=1              # 5_qc.sh: preseq, run_spp.R, plotFingerprint, PCA/Correlation, optional MACS3 summary, MultiQC
+# Preset via environment before ./run_all.sh overrides these defaults, e.g. RUN_TRIM=0 RUN_BOWTIE2=0 ./run_all.sh
+RUN_TRIM="${RUN_TRIM:-1}"
+RUN_BOWTIE2="${RUN_BOWTIE2:-1}"
+RUN_HOMER_TAGS="${RUN_HOMER_TAGS:-1}"
+RUN_PEAK_MACS3="${RUN_PEAK_MACS3:-0}"
+RUN_PEAK_HOMER="${RUN_PEAK_HOMER:-1}"
+RUN_QC="${RUN_QC:-1}"              # 5_qc.sh: preseq, run_spp.R, plotFingerprint, PCA/Correlation, optional MACS3 summary, MultiQC
 
 
 # ---- Trimming (1_trim_qc) ----
@@ -111,7 +112,7 @@ MACS3_BROAD_CUTOFF=0.10
 ###############################################################################
 # Helpers
 ###############################################################################
-mkdir -p "$TRIM_DIR" "$ALIGN_DIR" "$BAM_DIR" "$TRACK_DIR" "$BAMQC_DIR" "$TAG_DIR" "$PEAK_DIR" "$MACS3_DIR" "$HOMER_PEAK_DIR" "$LOG_DIR" "$MULTIQC_OUT"
+mkdir -p "$RAW_DIR" "$TRIM_DIR" "$ALIGN_DIR" "$BAM_DIR" "$TRACK_DIR" "$BAMQC_DIR" "$TAG_DIR" "$PEAK_DIR" "$MACS3_DIR" "$HOMER_PEAK_DIR" "$LOG_DIR" "$MULTIQC_OUT"
 
 check_cmd() {
   local cmd="$1"
