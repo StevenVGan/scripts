@@ -8,13 +8,35 @@ Reusable utilities for sequencing analysis. **Bash** helpers (`*.sh`) usually us
 
 **[prep/](prep/)** — IGM **`download_fastq`**, ENA **`download_geo_fastq_ena`**, Illumina **`link_fastq`**, **`merge_lanes_inplace`**, **`link_merged_fastqs`**. See **[prep/README.md](prep/README.md)**.
 
-## ChIP downstream reference (verbatim snapshot)
+## Topic subfolders
 
-**[chip_downstream_reference/](chip_downstream_reference/)** — Full copies of exploratory **GO Enrichr**, **HOMER/MACS annotation composition (pies)**, and **ChIP signal-profile heatmaps** from the GSE59530 ER/p65 cobinding analysis (`seq/ChIPseq/MCF7_ER_p65_ChIP_GSE59530/analysis/p65_ER_cobinding/`). **Authoritative scripts remain in that analysis directory**; this folder is for standardized discovery and reuse—re-copy from the project after you change the originals. See **[chip_downstream_reference/README.md](chip_downstream_reference/README.md)** and **[chip_downstream_reference/SOURCE.txt](chip_downstream_reference/SOURCE.txt)**.
+Methodology families with multiple related scripts get their own subfolder
+under `tools/`. Convention is documented in
+[../../CONVENTIONS.md](../../CONVENTIONS.md) §5. Examples (created when
+≥2 related scripts otherwise sit flat at the top of `tools/`):
+
+- `cleavage/` — single-base CUT&RUN cleavage methodology
+  (BAM→cut bigwig, motif cutoff sweeps, footprint plots)
+- `cobinding/` — ChIP/CUT&RUN cobinding consensus + downstream
+- *...add as families emerge*
+
+The family name `<topic>/` matches the prefix of joint repos that consume
+it: e.g. `tools/cleavage/` ↔ `seq/_joint/cleavage_sites_*/`. Flat
+single-script utilities (`heatmap.sh`, `lift_bed.sh`, `go_enrichr.py`)
+stay at the top level.
+
+## ChIP downstream reference — moved
+
+**[chip_downstream_reference/](chip_downstream_reference/)** is now a
+**one-page README pointer** to `seq/_joint/MCF7_ER_p65_cobinding/`, the
+joint analysis repo that owns the (formerly duplicated) GO Enrichr,
+annotation composition, and signal-profile scripts. Single source of
+truth — no more edit-here-copy-there sync. See
+[chip_downstream_reference/README.md](chip_downstream_reference/README.md).
 
 For generic bigWig heatmaps (peaks / TSS / gene bodies) without Method 2 site-class logic, use **heatmap.sh** in the table below.
 
-**Generic downstream CLIs** (Enrichr + annotation pies; CLI-style like `peak_ops.sh`, independent of the snapshot):
+**Generic downstream CLIs** (Enrichr + annotation pies; CLI-style like `peak_ops.sh`):
 
 - **[go_enrichr.py](go_enrichr.py)** — gene list, HOMER annotate table (`Gene Name`), or BED name column → Enrichr TSV + top-terms bar chart (`--gene-set` e.g. `GO_Biological_Process_2023`).
 - **[annotation_pie.py](annotation_pie.py)** — HOMER `Annotation` column (or arbitrary TSV column / one string per line) → single pie chart PNG.
@@ -157,7 +179,10 @@ Requires: `curl`, `md5sum`. Writes `*.part.*` then renames to `SRR....fastq.gz`.
 
 ## Notes
 
-- **chip_downstream_reference**: not a replacement for analysis-tree scripts. Generic **go_enrichr.py** / **annotation_pie.py** (above) complement the snapshot; the bundle remains the frozen GSE59530 Method 2 reference.
+- **chip_downstream_reference**: now a pointer to
+  `seq/_joint/MCF7_ER_p65_cobinding/` (the joint repo is the single source
+  of truth for cobinding scripts). Generic **go_enrichr.py** /
+  **annotation_pie.py** above are independent — use them directly.
 - **prep/** (**download_fastq**, **download_geo_fastq_ena**, **link_fastq**, **merge_lanes_inplace**, **link_merged_fastqs**) and **subsample_data**: set paths via script config or env; project wrappers should `exec` scripts under **`tools/prep/`** where appropriate.
 - **peak_ops `--viz`**: Venn diagrams use the same **mutually exclusive peak partitions** as the UpSet right-bar counts ([peak_vennDiagram.R](peak_vennDiagram.R)); not supported for more than four sets (use UpSet).
 - **UpSet (5+ sets):** [peaks_ops_upsetR.R](peaks_ops_upsetR.R) omits per-bar colored **queries** when **n > 4** to avoid an UpSetR bug; counts and default UpSet bars are unchanged.

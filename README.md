@@ -1,35 +1,55 @@
 # Analysis Scripts
 
-Bash scripts for CUT&RUN and related sequencing analysis pipelines.
+Bash + Python scripts for CUT&RUN, ChIP-seq, ATAC, csRNA, and PRO-seq
+analysis pipelines, plus shared tools used across `~/work/seq/`
+projects.
+
+## Conventions (read this first)
+
+For all "where does X go?" / "how do I structure Y?" questions, see
+**[CONVENTIONS.md](CONVENTIONS.md)** — the single source of truth for
+`~/work/` layout, gitignore rules, file templates, promotion path,
+joint-analysis conventions, env/ref tracking, and log policy. Both this
+README and per-project READMEs assume CONVENTIONS.md.
 
 ## Directory Structure
 
 ```
 scripts/
-├── pipeline/              # Main CUT&RUN pipeline (current standard)
-│   ├── cutrun/            # Upstream: trim → align → peak call → QC
-│   └── tools/             # Reusable utilities; prep/ = IGM/ENA download + FASTQ link/merge
+├── CONVENTIONS.md         # source of truth for ~/work/ layout (read first)
+├── env/                   # conda env tracking (bio.yml + dated lock/) — see env/README.md
+├── pipeline/              # All standard pipelines + shared tools
+│   ├── cutrun/            # CUT&RUN: trim → align → peak call → QC
+│   ├── csRNA/             # csRNA fork: post-trim MultiQC gate, strand bigWigs
+│   ├── proseq/            # PRO-seq fork: strand flip, pausing index
+│   ├── atac/              # ATAC-seq pipeline
+│   └── tools/             # Reusable utilities; topic subfolders OK (see CONVENTIONS.md §5)
 ├── docs/                  # Tutorials + GitHub Pages (rendered HTML)
 ├── project_archive/       # Archived project-specific scripts (by assay type)
 ├── legacy/                # Deprecated pipelines (MACS2-based)
-└── experimental/         # Work-in-progress (peak calling tests)
+└── experimental/          # Work-in-progress (peak calling tests)
 ```
 
 ## Quick Start
 
-For **new CUT&RUN projects**, use the standard pipeline:
+For a **new sequencing project**, see CONVENTIONS.md `§setup`. The short
+version:
 
-1. Copy `pipeline/cutrun/` into your project `script/` directory
-2. Edit `0_config.sh` (paths, genome, sample groups)
-3. Add `peakcall_groups.tsv` for peak calling
-4. Run: `./run_all.sh`
+1. `cp scripts/pipeline/<assay>/* seq/<assay>/<new_project>/script/pipeline/`
+2. Edit `0_config.sh` (BASE, GENOME, SE)
+3. Author `samples.tsv` and `peakcall_groups.tsv` in the project root
+4. `./run_all.sh` — `references.tsv` is auto-emitted by `5_qc.sh`
 
 ## Pipeline Overview
 
 | Folder | Purpose |
 |--------|---------|
 | **pipeline/cutrun** | Full CUT&RUN upstream: Trim Galore → Bowtie2 → HOMER tags → MACS3/HOMER peaks → QC + MultiQC |
-| **pipeline/tools** | Standalone utilities: heatmaps, BED liftover, merge/intersect peaks, subsample, **go_enrichr.py** / **annotation_pie.py** (Enrichr + annotation pies), **chip_downstream_reference/** snapshot; see **tools/prep/** for FASTQ download/link/merge |
+| **pipeline/csRNA** | csRNA fork of cutrun: post-trim MultiQC gate, strand bigWigs, HOMER `-sspe` |
+| **pipeline/proseq** | PRO-seq fork: poly-A trim (1.1), strand flip, pausing index (4.3), divergent calls |
+| **pipeline/atac** | ATAC-seq pipeline (paired-end, fragment-size aware) |
+| **pipeline/tools** | Standalone utilities: heatmaps, BED liftover, peak set ops, getfasta, **go_enrichr.py** / **annotation_pie.py**; topic subfolders for methodology families (e.g. `cleavage/`, `cobinding/`) per CONVENTIONS.md §5; **prep/** = IGM/ENA FASTQ download + link/merge |
+| **env/** | `bio.yml` (current conda env) + `lock/bio.<date>.yml` (dated snapshots). See `env/README.md` |
 | **project_archive** | One-off scripts from past projects (ChIP-seq, ATAC-seq, PRO-seq, CUT&RUN) |
 | **legacy** | Old MACS2-based pipeline; kept for reference |
 | **experimental** | Testing MACS3, HOMER, SEACR peak callers; peak set modes (ComplexHeatmap UpSet) |
@@ -37,9 +57,17 @@ For **new CUT&RUN projects**, use the standard pipeline:
 
 ## Requirements
 
-- Conda environment with: `trim_galore`, `cutadapt`, `fastqc`, `bowtie2`, `samtools`, `deeptools`, `homer`, `bedtools`, `macs3`, `preseq`, `multiqc`, `phantompeakqualtools` (provides `run_spp.R`)
-- Reference genome index (Bowtie2) and blacklist BED
-- Projects expect data at `$HOME/work/seq/` (configurable in `0_config.sh`)
+- The **`bio` conda env** — single env all pipelines and tools use
+  (`trim_galore`, `cutadapt`, `fastqc`, `bowtie2`, `samtools`,
+  `deeptools`, `homer`, `bedtools`, `macs3`, `preseq`, `multiqc`,
+  `phantompeakqualtools` providing `run_spp.R`, plus R packages).
+  Tracked in `env/bio.yml`; see `env/README.md` for rebuild and
+  versioning instructions. Per-project `references.tsv` (auto-emitted by
+  `5_qc.sh`) records which env lock was active at run time.
+- Reference genome index (Bowtie2) and blacklist BED — paths in
+  `0_config.sh`. Per-project `references.tsv` records which were used.
+- Projects expect data at `$HOME/work/seq/` (configurable in
+  `0_config.sh`).
 
 ## Tutorials
 
@@ -80,8 +108,12 @@ Thin wrapper around [`peak_ops.sh --mode intersect`](pipeline/tools/peak_ops.sh)
 
 ### `pipeline/tools/go_enrichr.py` and `annotation_pie.py`
 
-Generic **Enrichr** enrichment (gene list, HOMER annotate table, or BED name column) plus a horizontal bar plot of top terms, and **annotation composition pies** from HOMER-style `Annotation` strings (or an arbitrary TSV column). See [pipeline/tools/README.md](pipeline/tools/README.md) for examples. They complement **[chip_downstream_reference/](pipeline/tools/chip_downstream_reference/)**, which holds verbatim GSE59530 Method 2 downstream scripts—the analysis tree remains authoritative for that project.
+Generic **Enrichr** enrichment (gene list, HOMER annotate table, or BED name column) plus a horizontal bar plot of top terms, and **annotation composition pies** from HOMER-style `Annotation` strings (or an arbitrary TSV column). See [pipeline/tools/README.md](pipeline/tools/README.md) for examples.
 
-### `pipeline/tools/chip_downstream_reference/`
+### `pipeline/tools/chip_downstream_reference/` — moved
 
-Frozen copies of GSE59530 cobinding **GO**, **annotation composition**, and **signal-profile** scripts for reuse and discovery. Sync from `seq/ChIPseq/MCF7_ER_p65_ChIP_GSE59530/analysis/p65_ER_cobinding/` when those originals change. Details: [SOURCE.txt](pipeline/tools/chip_downstream_reference/SOURCE.txt).
+The frozen ChIP downstream scripts that previously lived here have been
+carved out into the dedicated joint analysis repo at
+`seq/_joint/MCF7_ER_p65_cobinding/` (single source of truth — no more
+edit-here-copy-there sync). This dir keeps a one-page README pointer for
+discoverability. See [pipeline/tools/chip_downstream_reference/README.md](pipeline/tools/chip_downstream_reference/README.md).

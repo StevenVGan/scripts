@@ -230,6 +230,22 @@ project script/local/  →  scripts/pipeline/tools/   (or scripts/pipeline/<assa
    callers to use the shared path. The wrapper pattern (used by existing
    `link_fastq.sh` per-project wrappers) keeps invocation paths stable.
 
+**Topic subfolders inside `tools/`** are encouraged when a methodology
+involves multiple related scripts that belong together. Examples:
+
+```
+scripts/pipeline/tools/
+├── cleavage/         # cleavage-site methodology (BAM→cut bigwig, motif cutoff sweeps, footprint plots)
+├── cobinding/        # ChIP/CUT&RUN cobinding consensus + downstream
+├── heatmap.sh        # generic deepTools heatmap (flat tool — fine to leave at top)
+├── go_enrichr.py     # generic Enrichr GO (flat tool)
+└── ...
+```
+
+Create a topic subfolder the moment you'd otherwise be putting ≥2 related
+scripts side-by-side at the top of `tools/`. Keep flat single-script
+utilities at the top level.
+
 The `scripts/experimental/` middle tier exists for things that are
 "promoted but not yet stable enough for `tools/`" — use sparingly. Most
 promotions go straight to `tools/` for solo work.
@@ -242,8 +258,18 @@ When an analysis depends heavily on data from ≥2 projects, it gets its
 own home: `seq/_joint/<name>/`. The leading `_` sorts joint dirs apart
 from per-project dirs in `ls`.
 
-**Naming:** lead with the analysis subject (e.g. `cleavage_sites_*`,
-`cobinding_*`) so related joints cluster alphabetically.
+**Naming — recurring analysis families share a prefix.** Lead with the
+analysis subject (e.g. `cleavage_sites_*`, `cobinding_*`,
+`motif_density_*`), then the dataset combo or biological focus
+(`_ERa_OGG1_KD_combined`, `_MCF7_ER_p65`, etc.). Why:
+
+- Related joints cluster alphabetically — `ls seq/_joint/cleavage_sites_*`
+  shows the whole family.
+- Greppable across `sources.tsv` files when asking "what other joints
+  consume project X?"
+- Triggers the natural promotion path: when ≥2 joints in a family share
+  scripts, those scripts belong in `scripts/pipeline/tools/<family>/`
+  (see §5 topic subfolders).
 
 **One convention covers all joints**, regardless of whether sources are
 same-assay or cross-assay. (No separate `_integrated/` directory.) The
