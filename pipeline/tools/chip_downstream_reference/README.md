@@ -1,40 +1,29 @@
-# ChIP downstream reference (GSE59530 Method 2)
+# ChIP downstream reference — moved
 
-Verbatim copies of exploratory **downstream visualization** scripts from the MCF7 ER/p65 cobinding analysis. They are **not** substitutes for the originals under the project tree.
+This directory previously held frozen copies of Method 2 downstream
+visualization scripts (annotation_composition / go_enrichment /
+signal_profiles) from the MCF7 ER/p65 cobinding analysis.
 
-## Authoritative source
+## New location
 
-Edit and version these files in:
+Everything has moved to the dedicated joint analysis repo:
 
-`seq/ChIPseq/MCF7_ER_p65_ChIP_GSE59530/analysis/p65_ER_cobinding/`
+`~/work/seq/_joint/MCF7_ER_p65_cobinding/`
 
-When you change behavior or fix bugs there, **refresh this folder** with the same files (manual sync). See [SOURCE.txt](SOURCE.txt) for the path manifest.
+That repo is the **single source of truth** for the cobinding analysis
+scripts and outputs. No more "edit-here, copy-there" sync — just edit
+in the joint repo.
 
-## Contents
+## When
 
-| Subfolder | What it does |
-|-----------|----------------|
-| `go_enrichment/` | Enrichr GO Biological Process for `downstream/lists/{macs,homer}/genes_Method2_*.txt` |
-| `annotation_composition/` | Genomic annotation composition (pies, TSVs) vs Method 2 arms |
-| `signal_profiles/` | Site-class BEDs + deepTools heatmaps (rep averaging + normalization) |
+Moved 2026-04-28 during Phase B of the ~/work restructure. See
+`~/work/RESTRUCTURE_PLAN.md` §5.1 (Joint #2) and the joint repo's
+`README.md` for full context.
 
-## Running from this copy
+## Generic downstream tools
 
-Scripts use `SCRIPT_DIR` / `__file__` for sibling Python helpers, so running from this directory works if you point inputs (e.g. `--cobinding-root`, `TRACK_DIR`) at **your** data. Paths inside defaults may still mention the original machine; override with environment variables as in each script’s header comments and local `README.txt` files.
+Tools that aren't specific to GSE59530 still live alongside this folder:
 
-## Generic heatmaps
-
-For track-vs-region heatmaps without the Method 2 site-class logic, use the existing tool (unchanged, self-contained):
-
-`../heatmap.sh`
-
-No shared `deeptools_helpers.bash` is required for this reference bundle (per standardization plan).
-
-## Generic tools (sibling scripts)
-
-For arbitrary inputs (not Method 2 layout), use the CLI tools in the parent `tools/` directory:
-
-- **`../go_enrichr.py`** — gene list, annotatePeaks TSV (`Gene Name`), or BED name column → Enrichr + bar plot (`--gene-set` e.g. `GO_Biological_Process_2023`).
-- **`../annotation_pie.py`** — HOMER `Annotation` column (matched case-insensitively), or another TSV column / one string per line → pie chart.
-
-This bundle stays the frozen GSE59530 reference; those scripts are the reusable entry points for new projects.
+- `../heatmap.sh` — generic deepTools bigWig heatmaps
+- `../go_enrichr.py` — generic Enrichr GO enrichment from gene lists
+- `../annotation_pie.py` — generic HOMER annotation composition pies
