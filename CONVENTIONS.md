@@ -49,15 +49,22 @@ filesystem tree, not a single repo). This doc describes how it's
 │
 ├── seq/<assay>/<project>/  # GIT REPO per active project
 │   ├── README.md           # follows template (§4)
-│   ├── 0_config.sh         # tracked: project-tuned
 │   ├── peakcall_groups.tsv # tracked: ip/control/name/type pairing
 │   ├── samples.tsv         # tracked: sample sheet (§4)
 │   ├── references.tsv      # tracked: auto-emitted by 5_qc.sh (§4)
-│   ├── script/
-│   │   ├── pipeline/       # COPIES of scripts/pipeline/<assay>/ — NOT tracked
-│   │   ├── local/          # tracked: project-specific scripts (incl link_fastq MAP_FILE)
-│   │   └── run_all.sh      # tracked: project-tweaked driver
-│   ├── analysis/<name>/    # tracked: within-project deeper analyses
+│   ├── link_sample.tsv     # tracked: link_fastq MAP_FILE — data provenance
+│   ├── multiqc_config.yaml # tracked: project-specific MultiQC config
+│   ├── script/             # FLAT (no script/pipeline/ subfolder — see §3 lean note)
+│   │   ├── 0_config.sh     # tracked: project-tuned
+│   │   ├── run_all.sh      # tracked: project-tweaked driver
+│   │   ├── link_fastq.sh   # tracked: project wrapper around scripts/pipeline/tools/prep/link_fastq.sh
+│   │   ├── 1_trim_qc.sh    # NOT tracked — copy of scripts/pipeline/<assay>/1_trim_qc.sh
+│   │   ├── 2_bowtie2.sh    # NOT tracked — copy
+│   │   ├── 3_homer_tags.sh # NOT tracked — copy
+│   │   ├── 4.1_*.sh, 4.2_*.sh, 4.3_*.sh   # NOT tracked — copies
+│   │   ├── 5_qc.sh         # NOT tracked — copy
+│   │   └── local/          # tracked: project-specific bespoke scripts
+│   ├── analysis/<name>/    # tracked: within-project deeper analyses (heavy outputs ignored — see §3)
 │   ├── qc/summary.tsv      # tracked (when emitted)
 │   ├── figures/
 │   │   ├── manifest.md     # tracked
@@ -82,9 +89,17 @@ filesystem tree, not a single repo). This doc describes how it's
 
 ## §3 — Gitignore rules
 
-**Always ignored** (across all project / joint repos):
+> **Lean-track note (Phase C, 2026-04-28):** The original plan called for
+> moving numbered step scripts into `script/pipeline/` (a subfolder) and
+> gitignoring the subfolder. In practice we kept `script/` flat and use
+> a glob rule to ignore the numbered scripts in place. Same principle
+> ("pipeline copies aren't tracked"), zero edits to sourcing paths,
+> smaller per-project diff. All 12 active projects use this layout.
 
-```
+**Standard `.gitignore` (per project repo):**
+
+```gitignore
+# Data + intermediates (regenerable from raw FASTQ + tracked code + bio env lock)
 data/
 cleandata/
 align/
@@ -92,22 +107,85 @@ peaks/
 multiqc/
 logs/
 scratch/
-*.bam
-*.bai
-*.bigwig
-*.bw
-*.fastq.gz
-*.fq.gz
-script/pipeline/      # truth lives in scripts/ repo
-.DS_Store
-*.swp
-__pycache__/
+
+# Common project-specific intermediate dirs (varies; extend per project)
+plot/
+old_heatmap/
+oridata/
+pausing/
+tss/
+analysis/inputs/
+
+# Heavy intermediate dirs INSIDE analysis/ at any depth (regenerable)
+analysis/**/bigwig/
+analysis/**/matrices/
+analysis/**/motif/
+analysis/**/qc/
+analysis/**/seq/
+analysis/**/tables/
+analysis/**/regions/
+analysis/**/bed/
+analysis/**/tracks_mean/
+analysis/**/figures/
+analysis/**/macs/
+analysis/**/homer/
+analysis/**/data/
+analysis/**/heatmap/
+analysis/**/merged_bw/
+analysis/**/bw_farm/
+analysis/**/peaks/
+analysis/**/logs/
+analysis/**/classify/
+
+# HOMER tag directories (large per-chr .tags.tsv files; regenerable)
+**/*_tagdir/
+**/pooled_*_tagdir/
+**/tagdirs/
+*.tags.tsv
+
+# Binary outputs (anywhere)
+*.bam *.bai *.bigwig *.bw *.bedgraph *.bg *.fastq.gz *.fq.gz *.npz
+
+# Compressed matrices
+*.mat.gz *.matrix.gz matrix_*.gz
+
+# HOMER motif outputs (numerous, regenerable)
+*.motif *.motifs *.motifs8 *.motifs10 *.motifs12 *.svg *.html
+**/homerResults/ **/knownResults/
+
+# MACS pileup intermediates
+*_treat_pileup.bdg *_control_lambda.bdg *_peaks.xls
+
+# Loose figure outputs scattered at subdir top-level
+analysis/*/figure_*.png
+analysis/*/figure_*.pdf
+analysis/*/*_heatmap.png
+analysis/*/*_profile_*.png
+
+# Caches + per-analysis run logs
+**/bed_cache/
+analysis/**/*.log
+*.log.tsv
+
+# Pipeline copies (truth in scripts/pipeline/<assay>/ — scripts/ repo)
+script/[1-9]*.sh
+script/[1-9]*.py
+script/README.md
+script/.lintr
+
+# Editor / OS / Python
+.DS_Store *.swp __pycache__/ *.pyc .ipynb_checkpoints/
 ```
 
 **Always tracked** (do not ignore):
-- `0_config.sh`, `peakcall_groups.tsv`, `samples.tsv`, `references.tsv`,
-  `README.md`, `script/local/*`, `script/run_all.sh`, `analysis/`,
-  `qc/summary.tsv`, `figures/manifest.md`, `figures/*.pdf|*.png|*.html`.
+- `0_config.sh`, `run_all.sh`, `link_fastq.sh` (project wrappers)
+- `peakcall_groups.tsv`, `samples.tsv`, `references.tsv`, `link_sample.tsv`,
+  `multiqc_config.yaml` (project metadata)
+- `README.md`
+- `script/local/*` (project-specific bespoke scripts)
+- `analysis/` script files (.sh, .py, .R) and small-text outputs
+- `qc/summary.tsv` (when emitted)
+- `figures/manifest.md` and milestone figures (PDF/PNG/MultiQC HTML snapshots)
 
 **Rationale:**
 - Code, config, and small text manifests → tracked. They're the
@@ -115,10 +193,23 @@ __pycache__/
 - Sequencing data and intermediates → ignored. They're huge and
   regenerable from raw FASTQ + tracked code + the env lock.
 - `scratch/` → ignored. It's the exploratory dumping ground; if something
-  there proves out, it graduates to `script/local/` and `figures/`.
-- `script/pipeline/` → ignored at the project level; the source of truth
-  is the `scripts/` repo. Per-project copies are pinned by `.pipeline_version`
-  (when adopted) or recorded in `references.tsv`.
+  there proves out, it graduates to `script/local/` and `figures/` with a
+  manifest entry.
+- `script/[1-9]*.sh` → ignored at the project level; the source of truth
+  is the `scripts/` repo. Per-project copies match upstream by convention.
+- `analysis/**/<heavy-dir>/` → ignored to prevent gigabytes of derived
+  outputs (HOMER tagdirs, matrices, motif/, bigwigs, etc.) from bloating
+  per-project repos.
+
+**Per-project extras** are common — e.g. `analysis/**/dinucleotide_conservation_long.tsv`,
+`analysis/**/refFlat*.txt.gz`, etc. Add these to a project's `.gitignore`
+when the standard rules let through unwanted files. Audit with
+`git ls-files | xargs ls -la | sort -k5n -r | head` after first commit.
+
+**Non-standard layouts (rare):** project #9 (`240216_240701_csRNA`) uses
+`scripts/csRNA/` instead of `script/`. Its gitignore reflects this with
+`scripts/csRNA/[1-9]*.sh`. Document any such deviation in the project's
+`README.md`.
 
 ---
 
