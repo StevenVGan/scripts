@@ -7,6 +7,7 @@ Main CUT&RUN analysis pipeline and shared utilities.
 | Path | Purpose |
 |------|---------|
 | **cutrun/** | Standard CUT&RUN upstream pipeline: trim → align → peak call → QC |
+| **csRNA/** | Nascent/csRNA fork: post-trim MultiQC gate, `TRIM_GALORE_EXTRA` / `BT2_EXTRA`, strand bigWigs, HOMER `-sspe`; see [csRNA/README.md](csRNA/README.md) |
 | **tools/** | Analysis utilities: heatmaps (`heatmap.sh`), BED liftover, peak set ops, getfasta, subsample; **go_enrichr.py** / **annotation_pie.py** (generic Enrichr + annotation pies); **chip_downstream_reference/** (frozen GSE59530 Method 2 downstream scripts) |
 | **tools/prep/** | Upstream FASTQ prep: IGM FTP + ENA SRR download, Illumina lane merge, symlink into project `data/` |
 
