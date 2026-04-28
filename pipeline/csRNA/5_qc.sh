@@ -326,4 +326,8 @@ EOF
 echo "=== STEP 5: Running MultiQC ==="
 multiqc "$BASE" "$BAMQC_DIR" -o "$MULTIQC_OUT" -c "${BASE}/multiqc_config.yaml" -f
 
+# Reference manifest — record genome/blacklist/bio_env_lock for reproducibility.
+# See scripts/CONVENTIONS.md §4 + §9.
+emit_references_tsv
+
 echo "=== 5_qc (csRNA) finished successfully ==="

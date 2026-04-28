@@ -172,7 +172,61 @@ check_cmd_string() {
 
 log_start() {
   local step="$1"
+
+  # Auto-prune: keep only LOG_KEEP_N most recent logs per step (default 3).
+  # Logs under LOG_DIR/keep/ are exempt (glob doesn't recurse). See scripts/CONVENTIONS.md §10.
+  local keep_n="${LOG_KEEP_N:-3}"
+  if [[ -d "$LOG_DIR" && "$keep_n" =~ ^[0-9]+$ ]]; then
+    ls -1t "${LOG_DIR}/${step}_"*.log 2>/dev/null | tail -n +$((keep_n + 1)) | xargs -r rm -f || true
+  fi
+
   local logfile="${LOG_DIR}/${step}_$(date +%Y%m%d_%H%M%S).log"
   echo "Logging to: $logfile"
   exec > >(tee -a "$logfile") 2>&1
+}
+
+# Emit ${BASE}/references.tsv recording reference paths + env lock used.
+# Called from 5_qc.sh as the last step. See scripts/CONVENTIONS.md §4.
+emit_references_tsv() {
+  local refs_file="${BASE}/references.tsv"
+  local sz mt sha fasta lock_dir latest_lock
+
+  {
+    printf "key\tpath\tsize_bytes\tmtime_iso\tsha256_or_dash\n"
+
+    printf "genome\t%s\t-\t-\t-\n" "${GENOME:-unknown}"
+
+    fasta="${GENOME_INDEX}.fa"
+    if [[ -f "$fasta" ]]; then
+      sz=$(stat -c%s "$fasta" 2>/dev/null || echo "-")
+      mt=$(date -u -d "@$(stat -c%Y "$fasta" 2>/dev/null)" -Iseconds 2>/dev/null || echo "-")
+      printf "genome_fasta\t%s\t%s\t%s\t-\n" "$fasta" "$sz" "$mt"
+    else
+      printf "genome_fasta\t%s\t-\t-\t-\n" "$fasta"
+    fi
+
+    printf "bowtie2_index\t%s\t-\t-\t-\n" "$GENOME_INDEX"
+
+    if [[ -f "$BLACKLIST" ]]; then
+      sz=$(stat -c%s "$BLACKLIST" 2>/dev/null || echo "-")
+      mt=$(date -u -d "@$(stat -c%Y "$BLACKLIST" 2>/dev/null)" -Iseconds 2>/dev/null || echo "-")
+      sha=$(sha256sum "$BLACKLIST" 2>/dev/null | awk '{print $1}')
+      [[ -z "$sha" ]] && sha="-"
+      printf "blacklist\t%s\t%s\t%s\t%s\n" "$BLACKLIST" "$sz" "$mt" "$sha"
+    else
+      printf "blacklist\t%s\t-\t-\t-\n" "$BLACKLIST"
+    fi
+
+    lock_dir="${HOME}/work/scripts/env/lock"
+    if [[ -d "$lock_dir" ]]; then
+      latest_lock=$(ls -1t "$lock_dir"/bio.*.yml 2>/dev/null | head -1 || true)
+      if [[ -n "$latest_lock" ]]; then
+        sz=$(stat -c%s "$latest_lock" 2>/dev/null || echo "-")
+        mt=$(date -u -d "@$(stat -c%Y "$latest_lock" 2>/dev/null)" -Iseconds 2>/dev/null || echo "-")
+        printf "bio_env_lock\t%s\t%s\t%s\t-\n" "$latest_lock" "$sz" "$mt"
+      fi
+    fi
+  } > "$refs_file"
+
+  echo "references.tsv written: $refs_file"
 }
