@@ -94,7 +94,7 @@ Shared helper to symlink Illumina-style or ENA-style FASTQs into a project `data
 - **Config:** Defaults in the script can be overridden with `export RAW_DIR`, `DEST_DIR`, `MAP_FILE` so a project wrapper can `exec` this file unchanged.
 - **Log:** Writes an enriched run log beside the map: `link_sample.log.tsv` (same basename as `MAP_FILE`, `.tsv` → `.log.tsv`) with resolved source paths and timestamp; the map file itself is not overwritten.
 
-Example project pattern: `seq/<assay>/<project>/script/link_fastq.sh` sets the three variables then `exec`s **`prep/link_fastq.sh`**. ChIP-seq GSE59530 (`seq/ChIPseq/MCF7_ER_p65_ChIP_GSE59530`) uses `link_sample.tsv` and `script/link_fastq.sh`; see that project’s `RUNBOOK.txt`.
+Example project pattern: `seq/<assay>/<project>/script/link_fastq.sh` sets the three variables then `exec`s **`prep/link_fastq.sh`**. ChIP-seq GSE59530 (`seq/chip/ChIP_GSE59530_ER_p65_MCF7`) uses `link_sample.tsv` and `script/link_fastq.sh`; see that project’s `RUNBOOK.txt`.
 
 ### `pipeline/tools/prep/download_geo_fastq_ena.sh`
 
