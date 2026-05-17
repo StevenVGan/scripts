@@ -1,0 +1,72 @@
+name: sc
+channels:
+  - conda-forge
+  - bioconda
+dependencies:
+  - python=3.11
+  - pip
+
+  # core scientific
+  - numpy
+  - scipy
+  - pandas
+  - scikit-learn
+  - statsmodels
+  - matplotlib
+  - seaborn
+  - jupyter
+  - jupyterlab
+  - ipykernel
+  - h5py
+  - hdf5
+  - pytables
+  - numba
+  - tqdm
+  - polars
+
+  # single-cell core
+  - scanpy
+  - anndata
+  - leidenalg
+  - python-igraph
+  - umap-learn
+  - louvain
+  - bbknn
+  - scanorama
+
+  # genomics interval / IO
+  - pyranges
+  - pybedtools
+  - pysam
+  - pyBigWig
+  - htslib
+  - tabix
+  - bedtools
+  - samtools
+
+  # peak calling (in case we ever pseudobulk + recall)
+  - macs3
+
+  # stats / DE
+  - rpy2
+
+  # snATAC pythonic stack — bioconda binary (avoids Rust/maturin source build)
+  - snapatac2
+
+  - pip:
+    # multimodal containers
+    - mudata
+    - muon
+
+    # doublets
+    - scrublet
+
+    # batch integration
+    - harmonypy
+
+    # auto-annotation
+    - celltypist
+
+    # optional heavy ML — keep available for scVI/PoissonVI later
+    # uncomment if/when needed (pulls in pytorch)
+    # - scvi-tools
