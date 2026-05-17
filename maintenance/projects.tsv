@@ -1,0 +1,45 @@
+status	path	notes
+active	seq/cnt/CnT_251215_H4K20me1_H3K27me3_MCF7_Steven	Project_states.txt
+active	seq/chip/ChIP_221104_HA_MCF7-ER3XHA_Likun	Project_states.txt
+active	seq/chip/ChIP_GSE59530_ER_p65_MCF7	Project_states.txt; ER/p65 cobinding ref
+active	seq/cnr/CnR_200207_ERa_MCF7_Steven	Project_states.txt
+active	seq/cnr/CnR_240605_p65_MCF7_TNFa_Likun	Project_states.txt; used by ER/p65 cobinding
+active	seq/cnr/CnR_221220_230207_HA_HepG2-ER3XHA_Steven	Project_states.txt
+active	seq/cnr/CnR_240926_ERa_MCF7_Ctrl_Steven	Project_states.txt
+active	seq/cnr/CnR_260115_ERa_MCF7_OGG1-KD_Priyanka	Project_states.txt; OGG1 joint analysis
+active	seq/cnr/CnR_260401_ERa_MCF7_OGG1-inhi_Priyanka	Project_states.txt; OGG1 joint analysis
+active	seq/pro/PRO_151113_MCF7_Steven	Project_states.txt
+active	seq/pro/PRO_230222_230321_HepG2-ER3XHA_MCF7_Steven	Project_states.txt
+active	seq/csrna/csRNA_240216_240701_HepG2-ER3XHA_Steven	Project_states.txt (old path was pro/csRNA*)
+active	seq/_joint/MCF7_ER_p65_cobinding	joint analysis (active)
+active	seq/_joint/cleavage_sites_ERa_OGG1_KD_combined	joint analysis (active)
+keep	seq/csrna/csRNA_240216_HepG2-ER3XHA_Steven	storage/record keeping (per Steven)
+keep	seq/csrna/csRNA_240701_HepG2-ER3XHA_Steven	storage/record keeping (per Steven)
+keep	seq/cnr/CnR_221220_HA_HepG2-ER3XHA_Steven	120K shell only — superseded by 221220_230207
+keep	seq/chip/_input	shared ChIP-seq peak-calling control ref (per Steven)
+active	seq/cnr/CnR_230314_H3K27ac_HepG2-ER3XHA_Steven	starting analysis soon (per Steven)
+active	seq/pro/PRO_241021_MCF7-siNEAT1_Steven	starting analysis soon (per Steven)
+cleanup	seq/atac/ATAC_220316_snATAC_HepG2_ENCODE-Snyder
+cleanup	seq/chip/ChIP_240603_NONO_KDM2A_Likun-Yuliang
+cleanup	seq/chip/ChIP_ENCODE-Bernstein_EZH2_HepG2
+cleanup	seq/chip/ChIP_ENCODE-Bernstein_H3K1me1_HepG2
+cleanup	seq/chip/ChIP_ENCODE-Bernstein_H3K9
+cleanup	seq/chip/ChIP_ENCODE-Bernstein_Histones_HepG2
+cleanup	seq/chip/ChIP_ENCODE-Bernstein_histone_MCF7
+cleanup	seq/chip/ChIP_ENCODE-Myers_CBX_HepG2
+cleanup	seq/chip/ChIP_ENCODE-Snyder_SUZ12_NONO_GATAD2B_MCF7
+cleanup	seq/cnr/CnR_230207_HA_NCAPG-H_K3K27ac_HepG2-ER3XHA_Steven
+cleanup	seq/cnr/CnR_230210_CTCF_CTX-HC_WT-Mecp2KO_Amir	mouse — needs mm10
+cleanup	seq/cnr/CnR_230224_ERa_MCF7-WT_del_TFF1e_Steven
+cleanup	seq/cnr/CnR_230314_H3K27ac_HepG2-ER3XHA_Steven_raw
+cleanup	seq/cnr/CnR_230524_NCAPG-H_HepG2-ER3XHA_Steven
+cleanup	seq/cnr/CnR_230530_NCAPG-H-H2_HepG2-ER3XHA_Steven
+cleanup	seq/cnr/CnR_240202_240227_NCAPH2_HA_HCT116_WT-AID_Steven
+cleanup	seq/cnr/CnR_240529_ER_SIM-A9_Steven	mouse (SIM-A9) — needs mm10
+cleanup	seq/cnr/CnR_240926_ERa_MCF7_NEAT1-KD_Steven
+cleanup	seq/cnr/CnR_250822_ERa_MCF7_delEZH2_Steven
+cleanup	seq/cnr/CnR_251204_CTCF_HEK_Priyanka
+cleanup	seq/cnr/CnR_251204_TOP1cc_HEK_Priyanka
+cleanup	seq/cnr/CnR_260115_ERa_MCF7_delEZH2_Steven
+cleanup	seq/cnr/CnR_260212_ERa_MCF7_shZNF432_Steven
+cleanup	seq/cnr/CnR_260212_ZNF432_MCF7_Steven

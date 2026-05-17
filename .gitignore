@@ -6,3 +6,7 @@ tmp_*
 
 # Large binaries in project_archive
 *.pdf
+
+# maintenance/: run outputs (regeneratable from archive_inactive.sh inventory/audit)
+maintenance/inventory.tsv
+maintenance/audit.tsv
