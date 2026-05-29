@@ -18,6 +18,7 @@ filesystem tree, not a single repo). This doc describes how it's
 | Add a one-off analysis script to project P | Put it in `seq/.../P/script/local/` and commit. |
 | Same script needed in 2+ projects | Promote to `scripts/pipeline/tools/`. See §5. |
 | New analysis spanning ≥2 projects | New repo under `seq/_joint/<name>/`. See §6. |
+| Add a wet-lab experiment derived from a project (qPCR panel, knockdown, validation) | New dir under `seq/.../P/experiments/<name>/`. Wet-lab work generates *new* data — keep it out of `analysis/` (which is in-silico re-analysis of the deposit). See §experiments. |
 | Add a figure to a project repo | Drop in `figures/`, add a row to `figures/manifest.md`. Milestone-only — see §gitignore-rules. |
 | Snapshot a final MultiQC report | Copy `multiqc/multiqc_report.html` → `figures/multiqc_YYYY-MM-DD.html`, add manifest row. |
 | Track which env / refs were used | `scripts/env/lock/` for env snapshots; per-project `references.tsv` (auto-emitted) records which were active. |
@@ -64,7 +65,8 @@ filesystem tree, not a single repo). This doc describes how it's
 │   │   ├── 4.1_*.sh, 4.2_*.sh, 4.3_*.sh   # NOT tracked — copies
 │   │   ├── 5_qc.sh         # NOT tracked — copy
 │   │   └── local/          # tracked: project-specific bespoke scripts
-│   ├── analysis/<name>/    # tracked: within-project deeper analyses (heavy outputs ignored — see §3)
+│   ├── analysis/<name>/    # tracked: within-project deeper analyses of the deposit (heavy outputs ignored — see §3)
+│   ├── experiments/<name>/ # tracked: wet-lab experiments derived from the analysis (qPCR/knockdown/validation) — panel/protocol/small results; raw data ignored (see §3, §experiments)
 │   ├── qc/summary.tsv      # tracked (when emitted)
 │   ├── figures/
 │   │   ├── manifest.md     # tracked
@@ -136,6 +138,11 @@ analysis/**/bw_farm/
 analysis/**/peaks/
 analysis/**/logs/
 analysis/**/classify/
+
+# Heavy raw data inside experiments/ (qPCR exports, instrument files, gel/microscopy images)
+experiments/**/data/
+experiments/**/raw/
+experiments/**/logs/
 
 # HOMER tag directories (large per-chr .tags.tsv files; regenerable)
 **/*_tagdir/
@@ -379,6 +386,43 @@ README documents what assays are involved.
 
 **When sources update:** bump SHAs in `sources.tsv`, decide whether to
 re-run analysis, commit. (No automation today; manual is fine for now.)
+
+---
+
+## §experiments — Wet-lab experiments derived from a project
+
+`analysis/` holds **in-silico re-analysis of a project's deposited data**.
+When a finding motivates a **wet-lab experiment** (qPCR validation, knockdown,
+luciferase, etc.), it generates *new* experimental data and belongs in a
+sibling **`experiments/<name>/`** dir, not in `analysis/`. Keeping the two
+apart preserves the meaning of `analysis/` (dry, regenerable from the deposit)
+vs. `experiments/` (wet, new primary data).
+
+**Layout:**
+
+```
+seq/<assay>/<project>/experiments/<name>/
+├── README.md      # hypothesis, design, data provenance (which analysis/ dirs it derives from), caveats, status
+├── panel.tsv      # tracked: gene/primer panel, protocol params, or design table
+├── primers.tsv    # tracked: primer sequences (when designed)
+├── results/       # tracked: small results tables, summary stats
+├── figures/       # ignored by default (§3) — promote milestones like any project figure
+├── data/, raw/    # IGNORED (§3) — qPCR exports, instrument files, images
+```
+
+**Conventions:**
+- It lives **inside** the project whose analysis motivated it — provenance
+  stays local (the README points at the `analysis/<name>/` tables it derives
+  from via `../../analysis/...`).
+- Same name-with-version discipline as analyses (`<topic>_v1`, `_v2`).
+- Tracked: README, design/panel/primer/results text tables. Ignored: raw
+  instrument data and heavy outputs (`experiments/**/{data,raw,logs}/` — §3).
+- **Graduation:** if the wet-lab line grows its own sequencing (RNA-seq,
+  CUT&RUN, etc.), it graduates to its own `seq/<assay>/<project>/`. A single
+  qPCR/validation experiment does not — it stays a project-local experiment.
+
+First instance: `seq/multiome/Multiome_GSE278576_AgingHippocampus_Ren/experiments/esr1_bmdm_qpcr_v1/`
+(BMDM qPCR panel testing the ESR1 -> Micro2 finding).
 
 ---
 
