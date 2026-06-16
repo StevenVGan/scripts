@@ -19,6 +19,10 @@ filesystem tree, not a single repo). This doc describes how it's
 | Same script needed in 2+ projects | Promote to `scripts/pipeline/tools/`. See §5. |
 | New analysis spanning ≥2 projects | New repo under `seq/_joint/<name>/`. See §6. |
 | Add a wet-lab experiment derived from a project (qPCR panel, knockdown, validation) | New dir under `seq/.../P/experiments/<name>/`. Wet-lab work generates *new* data — keep it out of `analysis/` (which is in-silico re-analysis of the deposit). See §experiments. |
+| Start a multi-step in-silico analysis of a project | New dir under `seq/.../P/analysis/<topic>_v1/` with numbered Python steps. See §11. |
+| Materially change an analysis approach (feature set, model, label space) | Bump version: copy `<topic>_v1/` → `<topic>_v2/`, add `Supersedes:` line to v2's README and `Superseded by:` to v1's. See §11. |
+| Hand an artifact from one analysis to another | Pin the producer path in the consumer's `00_config.sh` via env var (e.g. `FOOTPRINT_TSV=...`). See §11. |
+| Set up a multiome or scRNA project | Different toolchain (scanpy/SnapATAC2 in the `sc` env, not `bio`). See §12. |
 | Add a figure to a project repo | Drop in `figures/`, add a row to `figures/manifest.md`. Milestone-only — see §gitignore-rules. |
 | Snapshot a final MultiQC report | Copy `multiqc/multiqc_report.html` → `figures/multiqc_YYYY-MM-DD.html`, add manifest row. |
 | Track which env / refs were used | `scripts/env/lock/` for env snapshots; per-project `references.tsv` (auto-emitted) records which were active. |
@@ -287,7 +291,7 @@ pwm_motif_analysis    ../../PWM motif analysis           a1b2c3d   cleavage site
 ```markdown
 # <project-name>
 
-**Assay:** <CUTRUN | ChIPseq | PROseq | csRNA | CnT | ATAC | …>
+**Assay:** <CUTRUN | ChIPseq | PROseq | csRNA | CnT | ATAC | multiome | scRNA | …>
 **Genome:** <hg38 | hg19 | mm10 | …>
 **SE/PE:** <SE | PE>
 **Owner / submitter:** <name>
@@ -299,13 +303,69 @@ pwm_motif_analysis    ../../PWM motif analysis           a1b2c3d   cleavage site
 <2–3 sentences: biological question, IP target(s), comparison being made>
 
 ## Key analyses
-- `analysis/<name>/` — <one-line description>
+- `analysis/<name>_v<N>/` — <one-line description> [+ `Supersedes:`/`Superseded by:` if relevant]
+- `experiments/<name>/` — <wet-lab experiment, if any>
 - joint repos this project feeds: <`seq/_joint/<name>/` or "none">
 - joint repos this project consumes: <list or "none">
 
 ## Run
-- Pipeline: `scripts/pipeline/<assay>/` (see `references.tsv` `bio_env_lock`)
+- Pipeline: `scripts/pipeline/<assay>/` (see `references.tsv` `bio_env_lock`) — bulk-seq only
 - Standard invocation: `cd script && ./run_all.sh`
+- Multiome / scRNA: no project-level pipeline. Analyses are self-driving under `analysis/<name>/script/run_all.sh`. See §11.
+```
+
+### Per-analysis `README.md` (inside `analysis/<name>/`)
+
+```markdown
+# <topic>_v<N>
+
+**Supersedes:** [v<N-1>](../<topic>_v<N-1>/)         <!-- omit if v1 -->
+**Superseded by:** [v<N+1>](../<topic>_v<N+1>/)       <!-- add when bumped -->
+**Status:** <pending | running | complete | abandoned>
+**Headline result:** <one sentence; numbers if you have them>
+
+## Pipeline summary
+<one-paragraph "binarize → TF-IDF → SVD → GMM" style description; the
+authoritative source of truth is the numbered scripts in `script/`>
+
+## Inputs
+- `<env-var>=<default-path>` — <what it points at, which producer version>
+
+## Outputs
+- `processed/<key-table>.tsv` — <consumed by which downstream analysis>
+- `figures/<key-figure>.pdf` — <appears in REPORT.md / manifest>
+```
+
+### `RESUME.md` (per-analysis, when handing off mid-state)
+
+```markdown
+# Resume state — <topic>_v<N>
+
+**Last touched:** <YYYY-MM-DD>
+**Currently in:** <step NN — what's running / blocked / waiting on>
+**Next action:** <single concrete step the next session should take>
+
+## What's done
+- [x] 01–<NN-1> — <one-line summary>
+
+## What's running
+- step <NN> launched at <time> as `nohup … &`, PID <pid>, log `logs/<step>_<ts>.log`
+
+## What's blocked / decisions pending
+- <e.g. "v3.3_[redacted] dropped 14% of cells at QC — need Steven's call on filter strictness">
+```
+
+### `CHANGELOG.md` (per-analysis, append-only)
+
+```markdown
+# Changelog — <topic>
+
+## v<N> (YYYY-MM-DD)
+- <one-line summary of the change>
+- **Supersedes** v<N-1> because <reason>
+
+## v<N-1> (YYYY-MM-DD)
+- …
 ```
 
 ---
@@ -347,6 +407,46 @@ utilities at the top level.
 The `scripts/experimental/` middle tier exists for things that are
 "promoted but not yet stable enough for `tools/`" — use sparingly. Most
 promotions go straight to `tools/` for solo work.
+
+### Repo-level graduation (rare, for tool families that outgrow `tools/`)
+
+When a tool family grows into its own ontology + API + frozen release
+bundle, it can graduate to its own **top-level repo** under `~/work/`,
+alongside `PWM motif analysis/`. Trigger: a tool that started in
+`analysis/<name>/` of a single project but is now generic across tissues
+and consumed by ≥2 downstream analyses.
+
+`tf_atlas/` is the exemplar: extracted May 2026 from
+`seq/multiome/Multiome_GSE278576_AgingHippocampus_Ren/analysis/tf_atlas/`
+when it ceased to be [redacted]-specific. Consumers import via
+
+```python
+sys.path.insert(0, '/mnt/home/digan/work/tf_atlas/script')
+from atlas_api import TFAtlas
+```
+
+and depend on a frozen `RELEASE_v<N>.<M>/` bundle inside the tool repo so
+consumers can pin a known-good snapshot independent of `main`. Layout:
+
+```
+~/work/<toolname>/
+├── README.md
+├── docs/RELEASE_v<N>_plan.md
+├── script/
+│   ├── atlas_api.py        # public entry point
+│   ├── _utils.py           # shared helpers (see §11)
+│   ├── pipeline/           # batch build steps
+│   ├── orchestrate/        # wiring across phases
+│   ├── api/                # F1/F2/F3-style query interfaces
+│   ├── diagnostics/        # null-perm tests, regression suites
+│   └── legacy/             # frozen old versions
+├── data/atlas_artifacts/RELEASE_v<N>.<M>/   # frozen snapshot
+└── tests / regression suite
+```
+
+Don't graduate prematurely. The bar is: ≥2 downstream consumers, an
+internal versioning convention (§11) already needed, and a release-bundle
+discipline mature enough to commit to.
 
 ---
 
@@ -516,3 +616,194 @@ runs.
 9. Run pipeline: `cd script && ./run_all.sh`. `references.tsv` is
    auto-emitted by `5_qc.sh`.
 10. Add remote, push.
+
+---
+
+## §11 — Per-project deep analyses (`analysis/<name>/`)
+
+Per-project `analysis/<name>/` dirs hold *in-silico re-analyses of the
+deposit* (vs `experiments/<name>/` which is wet-lab; §experiments). When
+an analysis grows beyond a handful of scripts, it follows the same
+config-driven + numbered-step discipline as the bash pipeline — but in
+Python, not bash.
+
+### Versioning
+
+When an analysis approach changes materially (different feature set,
+different statistical model, different label space), **bump the version
+and keep the old one**:
+
+```
+analysis/
+├── [redacted]_aging_v3/          # canonical
+├── [redacted]_aging_v4/          # generalization test (kept; weaker but informative)
+├── [redacted]_aging_v5/          # ML feature ranking (kept; complementary)
+├── [redacted]_aging_v3.3_[redacted]/  # cohort split of v3.3
+└── [redacted]_[redacted]_v3/           # supersedes v2 (see README)
+```
+
+- `<topic>_vN` for major versions. `<topic>_vN_M` (`v3_5`, `v1.1_pooled`)
+  for incremental tweaks within a version line.
+- Suffix sub-variants with a context tag: `[redacted]_aging_v3.3_[redacted]/`
+  vs `[redacted]_aging_v3.3/` (cohort split), not `_v3.3a/_v3.3b/`.
+- **Never delete a superseded version** without first folding a `REPORT.md`
+  summary into the parent project's `CHANGELOG.md` or `docs/`. Old
+  versions document the paths that didn't work.
+- When v2 supersedes v1, add `**Supersedes:** [v1](../<topic>_v1/)` at
+  the top of v2's README, and `**Superseded by:** [v2](../<topic>_v2/)`
+  at the top of v1's README — visible without clicking through.
+
+### Doc set inside `analysis/<name>/`
+
+| File | When to use |
+|---|---|
+| `README.md` | Always. Headline result, status, pipeline summary, supersedes pointer. |
+| `PLAN.md` | When the analysis spans ≥5 steps or multiple sessions. Living design doc. |
+| `RESUME.md` | When handing off mid-state (own future-self after a break, or a subagent). |
+| `REPORT.md` | Long-form writeup of the final result. May graduate to parent project's `docs/`. |
+| `CHANGELOG.md` | Append-only history of version bumps and what changed. |
+| `BACKLOG.md` | Open follow-ups that aren't urgent enough to block. |
+
+Only `README.md` is required. Add the others when they earn their keep.
+Templates in §4.
+
+### Script layout
+
+```
+analysis/<topic>_v<N>/
+├── script/
+│   ├── 00_config.sh           # paths, env vars, producer toggles (mirrors 0_config.sh idiom)
+│   ├── 01_<name>.py           # numbered steps, executable directly
+│   ├── 02_<name>.py
+│   ├── ...
+│   ├── _utils.py              # shared helpers — underscore prefix, never numbered
+│   ├── _figure_style.py
+│   ├── _profile_plot.py
+│   └── run_all.sh             # drives the numbered steps
+├── data/                      # ignored — intermediate matrices, h5ads
+├── processed/                 # tracked: small text outputs (TSVs, signatures, BEDs)
+├── figures/                   # tracked: milestone figures only (project's manifest covers them)
+├── qc/                        # tracked: QC tables for the analysis
+└── logs/                      # ignored
+```
+
+- Numbered steps are **Python by default** for `analysis/` work (vs
+  bash for the bulk-seq pipeline), but `00_config.sh` stays bash so it
+  can be `source`d by `run_all.sh` and inherited as env vars by step
+  scripts.
+- `_underscore.py` files are local helpers — never numbered, never
+  executed standalone. If a `_utils.py` gets imported by ≥2 sibling
+  analyses, promote it to `scripts/pipeline/tools/<topic>/` (§5).
+
+### Standard Python prelude (numbered steps)
+
+```python
+"""NN_<name>.py — <one-line purpose>."""
+from __future__ import annotations
+import os, sys
+from pathlib import Path
+
+PROJ_ROOT = Path(os.environ.get("PROJ_ROOT",
+                                 Path(__file__).resolve().parent.parent))
+sys.path.insert(0, str(PROJ_ROOT / "script"))
+from _utils import ...  # noqa: E402
+```
+
+`PROJ_ROOT` env override lets a step be run from anywhere (cron, subagent
+worktree, parent driver script) without breaking imports.
+
+### Producer / consumer artifact handoff
+
+When `analysis/A/` produces a table that `analysis/B/` and `analysis/C/`
+consume, route through an **env var pinned in B's and C's `00_config.sh`**,
+not a hardcoded path:
+
+```bash
+# analysis/[redacted]_TFatlas_programs_v2/script/00_config.sh
+export FOOTPRINT_TSV="${FOOTPRINT_TSV:-$PROJ_ROOT/../[redacted]_footprint_v2/processed/footprints.tsv}"
+```
+
+Lets the consumer flip between producer versions (`[redacted]_footprint/`
+vs `_v2/`) by setting `FOOTPRINT_TSV=...` at invocation, without
+rewriting paths inside the numbered steps. Pattern in use:
+`FOOTPRINT_TSV`, `SKIP_ACTIVE_TF_FILTER`, `PROJ_ROOT`.
+
+---
+
+## §12 — Single-cell / multiome conventions
+
+`seq/multiome/`, `seq/scrna/`, `seq/atac/` (when it's single-cell) use a
+different toolchain from the bulk-seq pipelines and need extra discipline
+to stay stable on NFS.
+
+### Env
+
+Use the **`sc`** env, not `bio`. `sc` has scanpy, anndata, SnapATAC2,
+scrublet, scvi-tools, pyDESeq2, harmonypy; `bio` does not. Snapshots in
+`scripts/env/lock/sc.<date>.yml` (same convention as `bio`; §8).
+
+### h5ad / NFS rules
+
+`~/work/` is NFS, and HDF5 file locking on NFS is unreliable:
+
+- Always `export HDF5_USE_FILE_LOCKING=FALSE` before any anndata I/O.
+- Stage h5ad > 1 GB to local `/tmp` for writing, then `mv` back.
+- **Never write the same NFS h5ad from two processes** — silent
+  corruption. Check for orphan subagents before re-running a write step.
+- SnapATAC2 per-donor reads: open with `backed='r'` (string, not bool);
+  CSR row-slice is ~150× faster than column-slice; barcodes are plain
+  (no donor prefix).
+
+### Naming discipline
+
+- **`[redacted]` / `[redacted]`** (not `M1` / `M2`) — `M1`/`M2` are the macrophage
+  polarization vocabulary, a different concept; reusing them in [redacted]
+  figures, obs columns, and writeups confuses readers.
+- **`[redacted]` / `[redacted]`** for peripheral tumor macrophages
+  (both [redacted]+ and [redacted]+ are TAMs per [redacted]); supersedes earlier
+  "resident-vs-[redacted]" framing.
+- [redacted]-derived [redacted] retain canonical [redacted] markers
+  ([redacted]/[redacted]/[redacted]/[redacted] transfer to engrafted [redacted]s within
+  weeks); do **not** use those markers to rule out [redacted] origin. Use
+  [redacted]/[redacted]/[redacted]/CD44 etc. instead.
+
+### Statistical defaults
+
+- **No per-cell Mann-Whitney p-values for inference.** Cells are
+  pseudoreplicates of donors; per-cell tests p-hack via N inflation
+  (10k cells from 40 donors are not 10k independent observations). Use
+  **donor-stratified bootstrap CI on a per-donor summary** (mean log1p
+  expression, fraction expressing, AUCell median) instead. Generalizes
+  to any pseudoreplicated data, but in practice this is where it bites.
+- **Cell-weighted primary, donor-weighted sanity.** Report the
+  cell-weighted statistic as the primary result; show the donor-weighted
+  version alongside as a sanity check. Discrepancy = composition
+  confound; investigate before publishing.
+- **Dotplots default to absolute scale.** `sc.pl.dotplot(standard_scale=None, cmap="Reds")`.
+  `standard_scale="var"` column-z-scores; broadly-expressed markers
+  ([redacted] etc.) look "hollow" because 1.1× differences get stretched to
+  full-range contrast.
+
+### Parallel compute (joblib / sklearn / pyDESeq2)
+
+BLAS thread caps set after `import numpy` are no-ops. Two rules:
+
+- Export `OMP_NUM_THREADS` / `OPENBLAS_NUM_THREADS` / `MKL_NUM_THREADS`
+  in the shell *before* launching the Python step (or set them at the
+  very top of the script, before any scientific imports).
+- Inside joblib workers, use `threadpoolctl.threadpool_limits(N)`
+  explicitly — worker processes inherit a fresh BLAS that ignores the
+  parent's env vars.
+
+`pyDESeq2 n_cpus=4` whenever ≥2 chains run in parallel (combined with the
+16-core system cap; §13).
+
+---
+
+## §13 — System compute cap
+
+linux01 has **16 CPU cores**. Cap *total* concurrent CPU usage across all
+parallel jobs (pyDESeq2 `n_cpus`, joblib `n_jobs`, BLAS thread pools,
+parallel chains, subagents doing heavy work) at 16. Monitor with
+`uptime`; kill stale long-running jobs proactively when load goes above
+nominal.
