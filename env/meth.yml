@@ -1,0 +1,60 @@
+name: meth
+channels:
+  - conda-forge
+  - bioconda
+dependencies:
+  - python=3.11
+  - pip
+
+  # core scientific
+  - numpy
+  - scipy
+  - pandas
+  - scikit-learn
+  - statsmodels
+  - matplotlib
+  - seaborn
+  - jupyter
+  - jupyterlab
+  - ipykernel
+  - h5py
+  - hdf5
+  - pytables
+  - numba
+  - tqdm
+  - polars
+
+  # genomics interval / IO (mirrors sc env — known-compatible on this linux01)
+  - bedtools
+  - samtools
+  - tabix
+  - htslib
+  - pybedtools
+  - pybigwig
+  - pysam
+
+  # AnnData / xarray (ALLCools mcds is xarray-backed)
+  - anndata
+  - xarray
+  - zarr
+  - dask
+
+  # 3C / Hi-C (Phase 2 — harmless to install now)
+  - cooler
+  - cooltools
+
+  - pip:
+    # methylpy 1.4.7 still imports from pkg_resources, which setuptools>=81
+    # removed (slated for removal 2025-11-30). Pin until methylpy is updated.
+    - 'setuptools<81'
+    # Ecker-lab single-cell methylation toolkit (pip-only)
+    - methylpy
+    - allcools
+    # CrossMap = pure-Python liftover (reads UCSC .over.chain.gz);
+    # replaces the UCSC liftOver binary which needs glibc >=2.28 (this box
+    # is glibc 2.23) and bioconda's ucsc-liftover which has zlib conflicts.
+    # See [[feedback-conda-env-build-linux01]].
+    - CrossMap
+    #
+    # bismark + scHiCluster deferred to Phase 1+ — install separately when
+    # FASTQ re-mapping or per-cell 3C is activated.
