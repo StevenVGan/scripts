@@ -1,0 +1,9 @@
+# tss_groups.tsv — one findcsRNATSS job per row (csRNA fork only; PRO uses no groups file).
+# Read by 4.3_tss_csrna.sh -> findcsRNATSS.pl. TAB-separated, NO header row.
+# Blank lines and lines starting with # are skipped.
+# Columns: ip_bam <TAB> control_bam <TAB> name
+#   ip_bam       csRNA/PRO IP BAM in align/bam/
+#   control_bam  matched input BAM (findcsRNATSS needs -i); -/none/NA rows are skipped
+#   name         output basename
+# Delete the example and add your rows:
+# SG06_csRNA_E2_rep1_sorted.bam	SG10_csRNA_input_E2_rep1_sorted.bam	SG06_csRNA_E2_rep1

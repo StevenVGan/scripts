@@ -1,0 +1,111 @@
+# =============================================================================
+# Standard per-project .gitignore
+# Canonical source: scripts/pipeline/templates/gitignore (emitted by new_project.sh).
+# ONE PATTERN PER LINE. git treats a line with unescaped spaces as a SINGLE
+# literal pattern, so multi-pattern lines silently match nothing. Never combine.
+# =============================================================================
+
+# Data + intermediates (regenerable from raw FASTQ + tracked code + bio env lock)
+data/
+cleandata/
+align/
+peaks/
+multiqc/
+logs/
+scratch/
+
+# Common project-specific intermediate dirs (extend per project)
+plot/
+old_heatmap/
+oridata/
+pausing/
+tss/
+analysis/inputs/
+
+# Heavy intermediate dirs INSIDE analysis/ at any depth (regenerable)
+analysis/**/bigwig/
+analysis/**/matrices/
+analysis/**/motif/
+analysis/**/qc/
+analysis/**/seq/
+analysis/**/tables/
+analysis/**/regions/
+analysis/**/bed/
+analysis/**/tracks_mean/
+analysis/**/figures/
+analysis/**/macs/
+analysis/**/homer/
+analysis/**/data/
+analysis/**/heatmap/
+analysis/**/merged_bw/
+analysis/**/bw_farm/
+analysis/**/peaks/
+analysis/**/logs/
+analysis/**/classify/
+
+# Heavy raw data inside experiments/ (qPCR exports, instrument files, images)
+experiments/**/data/
+experiments/**/raw/
+experiments/**/logs/
+
+# HOMER tag directories (large per-chr .tags.tsv; regenerable)
+**/*_tagdir/
+**/pooled_*_tagdir/
+**/tagdirs/
+*.tags.tsv
+
+# Binary outputs (anywhere) — ONE PER LINE
+*.bam
+*.bai
+*.bigwig
+*.bw
+*.bedgraph
+*.bg
+*.fastq.gz
+*.fq.gz
+*.npz
+
+# Compressed matrices
+*.mat.gz
+*.matrix.gz
+matrix_*.gz
+
+# HOMER motif outputs (numerous, regenerable)
+*.motif
+*.motifs
+*.motifs8
+*.motifs10
+*.motifs12
+*.svg
+*.html
+**/homerResults/
+**/knownResults/
+
+# MACS pileup intermediates
+*_treat_pileup.bdg
+*_control_lambda.bdg
+*_peaks.xls
+
+# Loose figure outputs scattered at subdir top-level
+analysis/*/figure_*.png
+analysis/*/figure_*.pdf
+analysis/*/*_heatmap.png
+analysis/*/*_profile_*.png
+
+# Caches + per-analysis run logs
+**/bed_cache/
+analysis/**/*.log
+*.log.tsv
+
+# Pipeline copies (truth in scripts/pipeline/<assay>/ — this repo)
+script/[1-9]*.sh
+script/[1-9]*.py
+script/README.md
+script/.lintr
+
+# Editor / OS / Python — ONE PER LINE
+.DS_Store
+*.swp
+__pycache__/
+*.pyc
+.ipynb_checkpoints/

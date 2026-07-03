@@ -1,0 +1,8 @@
+# link_sample.tsv — link_fastq MAP_FILE: raw FASTQ prefix -> canonical sample name.
+# Read by script/link_fastq.sh (via scripts/pipeline/tools/prep/link_fastq.sh).
+# TAB-separated, NO header row. Blank lines and lines starting with # are skipped.
+# Columns: raw_prefix <TAB> new_sample_name
+#   raw_prefix        filename prefix in RAW_DIR (matched as <prefix>*_R1_001.fastq.gz, or <prefix>.fastq.gz for SE)
+#   new_sample_name   symlink base in data/  (-> new_sample_name_R1.fastq.gz)
+# Delete the example and add your rows:
+# SG_273	SG273_CnR_ERa_MCF7_Ctrl_E2_rep1

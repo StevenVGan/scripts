@@ -1,0 +1,10 @@
+# peakcall_groups.tsv — one peak-calling job per row.
+# Read by 4.1_peak_macs3.sh + 4.2_peak_homer.sh. TAB-separated, NO header row.
+# Blank lines and lines starting with # are skipped.
+# Columns: ip_bam <TAB> control_bam <TAB> name <TAB> type
+#   ip_bam       IP BAM in align/bam/ (e.g. SG01_ERa_E2_rep1_sorted.bam)
+#   control_bam  matched control BAM, or -/none/NA for no control
+#   name         output basename under peaks/<caller>/
+#   type         TF  (narrow)  |  Histone  (broad)
+# Delete the example and add your rows:
+# SG01_ERa_E2_rep1_sorted.bam	SG02_IgG_E2_sorted.bam	SG01_ERa_E2_rep1	TF
