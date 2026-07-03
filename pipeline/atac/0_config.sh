@@ -18,7 +18,10 @@ set -euo pipefail
 ###############################################################################
 
 # ---- Base ----
-BASE="${BASE:-${HOME}/work/seq/ATACseq/my_project}"
+# BASE = project root, auto-derived from this file's location (the project's script/ parent).
+# Robust to project rename / different home / different server. Override for out-of-tree runs:
+#   BASE=/path/to/project ./run_all.sh
+BASE="${BASE:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
 
 # ---- Conda env "bio" ----
 CONDA_BIO_ENV="${CONDA_BIO_ENV:-${HOME}/miniforge3/envs/bio}"

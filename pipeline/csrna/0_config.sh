@@ -34,8 +34,10 @@ set -euo pipefail
 
 
 # ---- Base ----
-# Default: combined HepG2 240216 + 240701 csRNA project (override with BASE=... ./run_all.sh)
-BASE="${BASE:-${HOME}/work/seq/PROseq/240216_240701_csRNA_HepG2-ER3XHA_Steven}"
+# BASE = project root, auto-derived from this file's location (the project's script/ parent).
+# Robust to project rename / different home / different server. Override for out-of-tree runs:
+#   BASE=/path/to/project ./run_all.sh
+BASE="${BASE:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
 
 # ---- Conda env "bio" (prepend to PATH when directory exists) ----
 CONDA_BIO_ENV="${CONDA_BIO_ENV:-${HOME}/miniforge3/envs/bio}"

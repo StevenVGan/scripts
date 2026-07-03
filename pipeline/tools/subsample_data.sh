@@ -6,11 +6,11 @@ shopt -s nullglob
 # Uses seqtk sample (same seed for R1 and R2). Requires: seqtk (e.g. conda install -c bioconda seqtk).
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-# Config: CONFIG_FILE env, or ../cutrun/0_config.sh (when run from pipeline/tools), or same dir
+# Config: CONFIG_FILE env, or ../cnr/0_config.sh (when run from pipeline/tools), or same dir
 if [[ -n "${CONFIG_FILE:-}" && -f "${CONFIG_FILE}" ]]; then
   source "${CONFIG_FILE}"
-elif [[ -f "${SCRIPT_DIR}/../cutrun/0_config.sh" ]]; then
-  source "${SCRIPT_DIR}/../cutrun/0_config.sh"
+elif [[ -f "${SCRIPT_DIR}/../cnr/0_config.sh" ]]; then
+  source "${SCRIPT_DIR}/../cnr/0_config.sh"
 elif [[ -f "${SCRIPT_DIR}/0_config.sh" ]]; then
   source "${SCRIPT_DIR}/0_config.sh"
 fi
