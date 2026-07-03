@@ -14,7 +14,7 @@ filesystem tree, not a single repo). This doc describes how it's
 
 | If you want to… | Do this |
 |---|---|
-| Set up a new sequencing project | See §setup. Copy `scripts/pipeline/<assay>/` into `seq/<assay>/<project>/script/pipeline/`, write `samples.tsv` (§4), `references.tsv` is auto-emitted by `5_qc.sh`, follow per-project README template (§4). |
+| Set up a new sequencing project | Run `scripts/setup/new_project.sh <pipeline> <name>` (§setup) — it stamps the flat `script/`, `.gitignore`, and template TSVs. Then fill `samples.tsv` / `peakcall_groups.tsv` (§4); `references.tsv` auto-emits from `5_qc.sh`. |
 | Add a one-off analysis script to project P | Put it in `seq/.../P/script/local/` and commit. |
 | Same script needed in 2+ projects | Promote to `scripts/pipeline/tools/`. See §5. |
 | New analysis spanning ≥2 projects | New repo under `seq/_joint/<name>/`. See §6. |
@@ -40,12 +40,15 @@ filesystem tree, not a single repo). This doc describes how it's
 ~/work/
 ├── scripts/                # GIT REPO (source-of-truth pipelines + tools)
 │   ├── env/                # conda env tracking (bio.yml, lock/bio.<date>.yml)
+│   ├── setup/              # new_project.sh scaffolder + PROVISION.md (2nd-node bootstrap)
 │   ├── CONVENTIONS.md      # this file
 │   ├── pipeline/
-│   │   ├── cutrun/         # standard CUT&RUN: 0_config.sh + numbered steps
-│   │   ├── csRNA/          # csRNA fork (post-trim MultiQC gate, strand)
-│   │   ├── proseq/         # PRO-seq fork (strand flip, pausing index)
+│   │   ├── cnr/            # standard CUT&RUN: 0_config.sh + numbered steps
+│   │   ├── csrna/          # csRNA fork (post-trim MultiQC gate, strand)
+│   │   ├── pro/            # PRO-seq fork (strand flip, pausing index)
 │   │   ├── atac/           # ATAC-seq pipeline
+│   │   ├── multiome/        # single-cell / multiome scaffold
+│   │   ├── templates/      # canonical scaffolding templates (gitignore, TSVs, README)
 │   │   └── tools/          # standalone utilities (heatmap.sh, peak_ops.sh,
 │   │                       # go_enrichr.py, annotation_pie.py, etc.)
 │   ├── experimental/       # WIP — peak-caller comparisons etc.
@@ -102,7 +105,10 @@ filesystem tree, not a single repo). This doc describes how it's
 > ("pipeline copies aren't tracked"), zero edits to sourcing paths,
 > smaller per-project diff. All 12 active projects use this layout.
 
-**Standard `.gitignore` (per project repo):**
+**Standard `.gitignore` (per project repo)** — canonical source is
+`scripts/pipeline/templates/gitignore` (stamped by `new_project.sh`).
+**One pattern per line**: git treats a line with unescaped spaces as a *single*
+literal pattern, so multi-pattern lines silently match nothing.
 
 ```gitignore
 # Data + intermediates (regenerable from raw FASTQ + tracked code + bio env lock)
@@ -154,18 +160,37 @@ experiments/**/logs/
 **/tagdirs/
 *.tags.tsv
 
-# Binary outputs (anywhere)
-*.bam *.bai *.bigwig *.bw *.bedgraph *.bg *.fastq.gz *.fq.gz *.npz
+# Binary outputs (anywhere) — ONE PER LINE
+*.bam
+*.bai
+*.bigwig
+*.bw
+*.bedgraph
+*.bg
+*.fastq.gz
+*.fq.gz
+*.npz
 
 # Compressed matrices
-*.mat.gz *.matrix.gz matrix_*.gz
+*.mat.gz
+*.matrix.gz
+matrix_*.gz
 
 # HOMER motif outputs (numerous, regenerable)
-*.motif *.motifs *.motifs8 *.motifs10 *.motifs12 *.svg *.html
-**/homerResults/ **/knownResults/
+*.motif
+*.motifs
+*.motifs8
+*.motifs10
+*.motifs12
+*.svg
+*.html
+**/homerResults/
+**/knownResults/
 
 # MACS pileup intermediates
-*_treat_pileup.bdg *_control_lambda.bdg *_peaks.xls
+*_treat_pileup.bdg
+*_control_lambda.bdg
+*_peaks.xls
 
 # Loose figure outputs scattered at subdir top-level
 analysis/*/figure_*.png
@@ -184,8 +209,12 @@ script/[1-9]*.py
 script/README.md
 script/.lintr
 
-# Editor / OS / Python
-.DS_Store *.swp __pycache__/ *.pyc .ipynb_checkpoints/
+# Editor / OS / Python — ONE PER LINE
+.DS_Store
+*.swp
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
 ```
 
 **Always tracked** (do not ignore):
@@ -228,8 +257,9 @@ when the standard rules let through unwanted files. Audit with
 
 ### `samples.tsv` (per project, tracked)
 
-The sample sheet — one row per sample. Subsumes any `link_fastq`
-`MAP_FILE` so data provenance lives with sample metadata.
+The sample sheet — one row per sample; the human-authored record of sample
+metadata + raw-FASTQ provenance. Distinct from `link_sample.tsv` (below), the
+terse `prefix→newname` map that `link_fastq` actually consumes.
 
 ```
 sample_id            target    condition    replicate    raw_fastq_R1                          raw_fastq_R2                          sequencing_run    notes
@@ -240,6 +270,32 @@ MCF7_ERa_E2_rep1     ERa       E2_1h        1            raw_seq/260401_IGM/SG14
 Use `-` for `raw_fastq_R2` on single-end and for any column that doesn't
 apply. Use `notes` to flag pre-publication or external-collaborator data
 (prefix `EMBARGO:` so a pre-push scan can catch it).
+
+### `peakcall_groups.tsv` (per project, tracked)
+
+Peak-calling jobs, one per row. Read by `4.1_peak_macs3.sh` + `4.2_peak_homer.sh`.
+TAB-separated, **no header row**; blank and `#`-comment lines are skipped.
+
+```
+# ip_bam                      control_bam              name              type
+SG01_ERa_E2_rep1_sorted.bam   SG02_IgG_E2_sorted.bam   SG01_ERa_E2_rep1  TF
+SG05_H3K27ac_rep1_sorted.bam  -                        H3K27ac_rep1      Histone
+```
+
+`control_bam` = `-`/`none`/`NA` for no control; `type` = `TF` (narrow) | `Histone`
+(broad). The csRNA fork additionally uses `tss_groups.tsv` (same shape minus the
+`type` column), read by `4.3_tss_csrna.sh` → `findcsRNATSS.pl`; the PRO fork
+replaces that step with `4.3_pausing_divergent.sh` and uses no groups file.
+
+### `link_sample.tsv` (per **project root**, tracked)
+
+The `link_fastq` `MAP_FILE`: raw FASTQ prefix → canonical sample name. Canonical
+location is the project root. TAB-separated, no header.
+
+```
+SG_273   SG273_CnR_ERa_MCF7_Ctrl_E2_rep1
+SG_274   SG274_CnR_ERa_MCF7_Ctrl_E2_rep2
+```
 
 ### `references.tsv` (per project, tracked, auto-emitted)
 
@@ -254,7 +310,7 @@ blacklist       /mnt/home/digan/work/ref/blacklist/hg38/hg38-blacklist.v2.bed   
 bio_env_lock    /mnt/home/digan/work/scripts/env/lock/bio.2026-04-28.yml                    23048         2026-04-28T05:08:00   -
 ```
 
-`sha256` only for small files (blacklists, custom BEDs). Big files get
+`sha256` only for files **< 10 MB** (blacklists, custom BEDs). Larger files get
 size+mtime — catches "someone replaced the file" without minutes of hashing.
 
 ### `sources.tsv` (per joint repo, tracked)
@@ -263,16 +319,31 @@ Records source projects + pinned SHAs. Authored manually when the joint
 is created; refresh SHAs when you re-pull from a source.
 
 ```
-name              path                                              git_sha    role
-ERa_OGG1_KD       ../../CUTRUN/CnR_260115_ERa_MCF7_OGG1-KD_Priyanka  abc1234   knockdown
-ERa_OGG1_nonKD    ../../CUTRUN/CnR_260401_ERa_MCF7_OGG1-inhi_Priyanka     def5678   control
+name              path                                              git_sha   role
+ERa_OGG1_KD       ../../cnr/CnR_260115_ERa_MCF7_OGG1-KD_Priyanka    abc1234   knockdown
+ERa_OGG1_nonKD    ../../cnr/CnR_260401_ERa_MCF7_OGG1-inhi_Priyanka  def5678   control
 ```
 
-### `dependencies.tsv` (per project consuming PWM motif analysis or other external repo)
+### `dependencies.tsv` (cross-project / external-artifact ledger, tracked)
+
+The workspace dependency graph: any time a project or analysis consumes another
+project's artifact (an external repo like PWM, a produced h5ad / DEG table /
+signature, or a shared helper), record it — one row per artifact, fixed schema
+`name / path / git_sha / used_for`. **Fill `git_sha`** with the producer's commit
+(use `-` only when the source isn't git-init'd, and say so in `used_for`).
+sc/multiome analyses never run `5_qc.sh`, so they get no auto `references.tsv`;
+give each one a `sc_env_lock` row pinning the `scripts/env/lock/sc.<date>.yml` it
+ran under, so the analysis still records its environment.
+
+Paths are relative to the project root where `dependencies.tsv` lives:
+`~/work`-level repos (`PWM motif analysis`, `scripts`) are three `../` up; a
+sibling seq project is `../../<assay>/...`.
 
 ```
-name                  path                              git_sha    used_for
-pwm_motif_analysis    ../../PWM motif analysis           a1b2c3d   cleavage site motif scoring
+name                  path                                                       git_sha   used_for
+pwm_motif_analysis    ../../../PWM motif analysis                                6c75a25   cleavage-site motif scoring
+[redacted]   ../../scrna/scRNAseq_..._[redacted]/analysis/[redacted]_v1/sig.tsv   b7e912d   [redacted]/[redacted] scoring
+sc_env_lock           ../../../scripts/env/lock/sc.2026-05-30.yml               -         sc env lock (dated filename is the pin)
 ```
 
 ### `figures/manifest.md`
@@ -291,7 +362,7 @@ pwm_motif_analysis    ../../PWM motif analysis           a1b2c3d   cleavage site
 ```markdown
 # <project-name>
 
-**Assay:** <CUTRUN | ChIPseq | PROseq | csRNA | CnT | ATAC | multiome | scRNA | …>
+**Assay:** <CUT&RUN | ChIPseq | PRO-seq | csRNA | CnT | ATAC | multiome | scRNA | …>
 **Genome:** <hg38 | hg19 | mm10 | …>
 **SE/PE:** <SE | PE>
 **Owner / submitter:** <name>
@@ -444,6 +515,14 @@ consumers can pin a known-good snapshot independent of `main`. Layout:
 └── tests / regression suite
 ```
 
+A `RELEASE_v<N>.<M>/` bundle is **frozen and self-describing**: alongside the
+data it carries its own `MANIFEST.tsv` (files + shas), `METHODS.md`,
+`CHANGELOG.md`, and `NEGATIVE_RESULTS.md`, so it can be audited without the build
+tree (tf_atlas's is the exemplar). **Consumers must pin to the bundle dir** and
+record the tool's commit SHA in their `dependencies.tsv` — not float on live
+`main` with only a soft version string, or the "known-good snapshot independent
+of `main`" guarantee is lost.
+
 Don't graduate prematurely. The bar is: ≥2 downstream consumers, an
 internal versioning convention (§11) already needed, and a release-bundle
 discipline mature enough to commit to.
@@ -521,7 +600,15 @@ seq/<assay>/<project>/experiments/<name>/
   CUT&RUN, etc.), it graduates to its own `seq/<assay>/<project>/`. A single
   qPCR/validation experiment does not — it stays a project-local experiment.
 
-First instance: `seq/multiome/Multiome_GSE278576_AgingHippocampus_Ren/experiments/[redacted]/`
+**Two homes, by provenance.** The above is for an experiment that derives from a
+project's deposit — it lives *inside* that project. An experiment with **no**
+sequencing deposit behind it (a standalone bench assay) instead goes in the
+top-level **`~/work/experiments/`** repo as a dated sibling dir
+(`<YYMMDD>_<slug>_v<N>/`), with shared qPCR helpers factored into
+`experiments/_lib/` on their 2nd use. Routing test: "does this derive from a
+deposit?" — yes → project-local; no → the top-level repo.
+
+First instance (project-local): `seq/multiome/Multiome_GSE278576_AgingHippocampus_Ren/experiments/[redacted]/`
 ([redacted] qPCR panel testing the [redacted] -> [redacted] finding).
 
 ---
@@ -533,9 +620,10 @@ First instance: `seq/multiome/Multiome_GSE278576_AgingHippocampus_Ren/experiment
 project and does not consume the standard pipelines. Several seq projects
 consume its outputs or scripts.
 
-**To use PWM in a seq project:** add `dependencies.tsv` (§4) recording the
-PWM commit SHA you built against. Update the SHA whenever you re-pull from
-a newer PWM commit.
+**To use PWM in a seq project:** add a `dependencies.tsv` row (§4) recording the
+PWM commit SHA you built against; update it when you re-pull. `dependencies.tsv`
+is in fact the general ledger for *any* cross-project or external-repo
+consumption (§4), not just PWM — one row per consumed artifact, `git_sha` filled.
 
 **If a PWM utility matures into a generally-useful seq tool:** promote it
 into `scripts/pipeline/tools/` per §5. Commit message:
@@ -601,21 +689,28 @@ runs.
 
 ## §setup — Setting up a new sequencing project
 
-1. `mkdir -p seq/<assay>/<new_project>/{data,script/local,figures,qc,analysis}`
-2. Copy pipeline: `cp scripts/pipeline/<assay>/* seq/<assay>/<new_project>/script/pipeline/`
-   (Or: once `setup_project.sh` exists, just run it.)
-3. Edit `seq/<assay>/<new_project>/script/0_config.sh`:
-   - Set `BASE` to the project root.
-   - Set `GENOME`, `SE` if non-default.
-4. Author `samples.tsv` (template §4).
-5. Author `peakcall_groups.tsv` (ip/control/name/type rows).
-6. Author `README.md` (template §4).
-7. Author `link_fastq.sh` MAP_FILE under `script/local/` (or fold mapping
-   into `samples.tsv`). Run `script/local/link_fastq.sh` to populate `data/`.
-8. `git init`, drop in the standard `.gitignore` (§3), first commit.
-9. Run pipeline: `cd script && ./run_all.sh`. `references.tsv` is
-   auto-emitted by `5_qc.sh`.
-10. Add remote, push.
+**Preferred — one command:**
+
+```bash
+scripts/setup/new_project.sh <pipeline> <project_name>   # pipeline = cnr | csrna | pro | atac
+#   --dest <subdir>   place under seq/<subdir>/  (default = pipeline; e.g. --dest cnt or --dest chip)
+#   --genome hg19 --se --owner <name> --upstream <accession>
+```
+
+It stamps the full skeleton — the dir tree, the pipeline scripts (flat in
+`script/`, git-ignored copies), the one-per-line `.gitignore`, the header
+template TSVs, a token-filled `README.md`, and a `link_fastq.sh` that `exec`s
+the shared prep script — then `git init` + stages (it does **not** commit).
+`BASE` auto-derives from the project root, so `0_config.sh` needs no edit;
+non-default `GENOME`/`SE` are baked in by the flags.
+
+Then supply the biology the scaffolder can't:
+1. `link_sample.tsv` — raw prefix → sample name; set `RAW_DIR` in `script/link_fastq.sh`.
+2. `samples.tsv` — one row per sample (§4).
+3. `peakcall_groups.tsv` — IP/control pairings + `TF`/`Histone` (§4).
+4. `README.md` — fill "What this project is" + any remaining header TODOs.
+5. `cd script && ./link_fastq.sh && ./run_all.sh` — `references.tsv` auto-emits from `5_qc.sh`.
+6. Review (`git status`), commit, add remote (`gh repo create`), push.
 
 ---
 
@@ -642,8 +737,10 @@ analysis/
 └── [redacted]_[redacted]_v3/           # supersedes v2 (see README)
 ```
 
-- `<topic>_vN` for major versions. `<topic>_vN_M` (`v3_5`, `v1.1_pooled`)
-  for incremental tweaks within a version line.
+- `<topic>_vN` for major versions — a **new feature set, statistical model,
+  label space, or input cohort** (the result could legitimately differ).
+  `<topic>_vN_M` (`v3_5`, `v1.1_pooled`) for incremental tweaks that leave the
+  method identity intact (a threshold, a seed, a plotting change).
 - Suffix sub-variants with a context tag: `[redacted]_aging_v3.3_[redacted]/`
   vs `[redacted]_aging_v3.3/` (cohort split), not `_v3.3a/_v3.3b/`.
 - **Never delete a superseded version** without first folding a `REPORT.md`
@@ -652,6 +749,12 @@ analysis/
 - When v2 supersedes v1, add `**Supersedes:** [v1](../<topic>_v1/)` at
   the top of v2's README, and `**Superseded by:** [v2](../<topic>_v2/)`
   at the top of v1's README — visible without clicking through.
+- **Retire, don't delete.** Move a superseded version into `analysis/_archive/`
+  (the leading `_` sorts it aside, like `seq/_joint/`) and add a row to
+  `analysis/_archive/ARCHIVE.md` naming the dir, what replaced it, and one line
+  on why. Keeps the live `analysis/` listing readable while preserving the
+  dead-end for the record; the `ARCHIVE.md` row also substitutes for a
+  `Superseded by:` pointer when the retired dir has no README.
 
 ### Doc set inside `analysis/<name>/`
 
@@ -691,9 +794,12 @@ analysis/<topic>_v<N>/
   bash for the bulk-seq pipeline), but `00_config.sh` stays bash so it
   can be `source`d by `run_all.sh` and inherited as env vars by step
   scripts.
-- `_underscore.py` files are local helpers — never numbered, never
-  executed standalone. If a `_utils.py` gets imported by ≥2 sibling
-  analyses, promote it to `scripts/pipeline/tools/<topic>/` (§5).
+- `_underscore.py` files are local helpers — never numbered, never executed
+  standalone. Promotion has **two tiers**: a helper imported by ≥2 sibling
+  analyses **within one project** lifts to the project's `script/local/`
+  (shared project-wide but still deposit-specific — e.g. Reed's `_resources.py` /
+  `_donor_qc.py` / `_marker_library.py`); only a helper genuinely general
+  **across projects** graduates to `scripts/pipeline/tools/<topic>/` (§5).
 
 ### Standard Python prelude (numbered steps)
 
