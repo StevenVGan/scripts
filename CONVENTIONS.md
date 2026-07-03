@@ -342,7 +342,7 @@ sibling seq project is `../../<assay>/...`.
 ```
 name                  path                                                       git_sha   used_for
 pwm_motif_analysis    ../../../PWM motif analysis                                6c75a25   cleavage-site motif scoring
-[redacted]   ../../scrna/scRNAseq_..._[redacted]/analysis/[redacted]_v1/sig.tsv   b7e912d   [redacted]/[redacted] scoring
+shared_signature      ../../scrna/<project>/analysis/<name>_v1/sig.tsv           b7e912d   score cells against a shared signature
 sc_env_lock           ../../../scripts/env/lock/sc.2026-05-30.yml               -         sc env lock (dated filename is the pin)
 ```
 
@@ -423,7 +423,7 @@ authoritative source of truth is the numbered scripts in `script/`>
 - step <NN> launched at <time> as `nohup … &`, PID <pid>, log `logs/<step>_<ts>.log`
 
 ## What's blocked / decisions pending
-- <e.g. "v3.3_[redacted] dropped 14% of cells at QC — need Steven's call on filter strictness">
+- <e.g. "the v3.3 cohort split dropped 14% of cells at QC — need Steven's call on filter strictness">
 ```
 
 ### `CHANGELOG.md` (per-analysis, append-only)
@@ -487,9 +487,8 @@ alongside `PWM motif analysis/`. Trigger: a tool that started in
 `analysis/<name>/` of a single project but is now generic across tissues
 and consumed by ≥2 downstream analyses.
 
-`tf_atlas/` is the exemplar: extracted May 2026 from
-`seq/multiome/Multiome_GSE278576_AgingHippocampus_Ren/analysis/tf_atlas/`
-when it ceased to be [redacted]-specific. Consumers import via
+`tf_atlas/` is the exemplar: extracted May 2026 from a per-project
+`analysis/tf_atlas/` when it ceased to be tissue-specific. Consumers import via
 
 ```python
 sys.path.insert(0, '/mnt/home/digan/work/tf_atlas/script')
@@ -608,8 +607,8 @@ top-level **`~/work/experiments/`** repo as a dated sibling dir
 `experiments/_lib/` on their 2nd use. Routing test: "does this derive from a
 deposit?" — yes → project-local; no → the top-level repo.
 
-First instance (project-local): `seq/multiome/Multiome_GSE278576_AgingHippocampus_Ren/experiments/[redacted]/`
-([redacted] qPCR panel testing the [redacted] -> [redacted] finding).
+First instance (project-local): a `seq/<assay>/<project>/experiments/<name>_v1/`
+qPCR validation panel derived from that project's `analysis/` finding.
 
 ---
 
@@ -730,19 +729,19 @@ and keep the old one**:
 
 ```
 analysis/
-├── [redacted]_aging_v3/          # canonical
-├── [redacted]_aging_v4/          # generalization test (kept; weaker but informative)
-├── [redacted]_aging_v5/          # ML feature ranking (kept; complementary)
-├── [redacted]_aging_v3.3_[redacted]/  # cohort split of v3.3
-└── [redacted]_[redacted]_v3/           # supersedes v2 (see README)
+├── clustering_v3/            # canonical
+├── clustering_v4/            # generalization test (kept; weaker but informative)
+├── clustering_v5/            # ML feature ranking (kept; complementary)
+├── clustering_v3.3_cohortB/  # cohort split of v3.3
+└── de_analysis_v3/           # supersedes v2 (see README)
 ```
 
 - `<topic>_vN` for major versions — a **new feature set, statistical model,
   label space, or input cohort** (the result could legitimately differ).
   `<topic>_vN_M` (`v3_5`, `v1.1_pooled`) for incremental tweaks that leave the
   method identity intact (a threshold, a seed, a plotting change).
-- Suffix sub-variants with a context tag: `[redacted]_aging_v3.3_[redacted]/`
-  vs `[redacted]_aging_v3.3/` (cohort split), not `_v3.3a/_v3.3b/`.
+- Suffix sub-variants with a context tag: `clustering_v3.3_cohortB/`
+  vs `clustering_v3.3/` (cohort split), not `_v3.3a/_v3.3b/`.
 - **Never delete a superseded version** without first folding a `REPORT.md`
   summary into the parent project's `CHANGELOG.md` or `docs/`. Old
   versions document the paths that didn't work.
@@ -825,11 +824,11 @@ consume, route through an **env var pinned in B's and C's `00_config.sh`**,
 not a hardcoded path:
 
 ```bash
-# analysis/[redacted]_TFatlas_programs_v2/script/00_config.sh
-export FOOTPRINT_TSV="${FOOTPRINT_TSV:-$PROJ_ROOT/../[redacted]_footprint_v2/processed/footprints.tsv}"
+# analysis/tf_programs_v2/script/00_config.sh
+export FOOTPRINT_TSV="${FOOTPRINT_TSV:-$PROJ_ROOT/../footprint_v2/processed/footprints.tsv}"
 ```
 
-Lets the consumer flip between producer versions (`[redacted]_footprint/`
+Lets the consumer flip between producer versions (`footprint/`
 vs `_v2/`) by setting `FOOTPRINT_TSV=...` at invocation, without
 rewriting paths inside the numbered steps. Pattern in use:
 `FOOTPRINT_TSV`, `SKIP_ACTIVE_TF_FILTER`, `PROJ_ROOT`.
@@ -862,16 +861,12 @@ scrublet, scvi-tools, pyDESeq2, harmonypy; `bio` does not. Snapshots in
 
 ### Naming discipline
 
-- **`[redacted]` / `[redacted]`** (not `M1` / `M2`) — `M1`/`M2` are the macrophage
-  polarization vocabulary, a different concept; reusing them in [redacted]
-  figures, obs columns, and writeups confuses readers.
-- **`[redacted]` / `[redacted]`** for peripheral tumor macrophages
-  (both [redacted]+ and [redacted]+ are TAMs per [redacted]); supersedes earlier
-  "resident-vs-[redacted]" framing.
-- [redacted]-derived [redacted] retain canonical [redacted] markers
-  ([redacted]/[redacted]/[redacted]/[redacted] transfer to engrafted [redacted]s within
-  weeks); do **not** use those markers to rule out [redacted] origin. Use
-  [redacted]/[redacted]/[redacted]/CD44 etc. instead.
+- Cell-state / subtype labels must not collide with established vocabulary from a
+  **different** concept (e.g. immune-cell polarization terms); a collision
+  misleads readers. Pick project-specific names that don't overload standard terms.
+- Each project's README defines its canonical label space; downstream analyses
+  **read** those labels, never re-fit them. The specific per-cohort label
+  conventions live with the project (and in the private lab notes), not here.
 
 ### Statistical defaults
 
@@ -887,8 +882,7 @@ scrublet, scvi-tools, pyDESeq2, harmonypy; `bio` does not. Snapshots in
   confound; investigate before publishing.
 - **Dotplots default to absolute scale.** `sc.pl.dotplot(standard_scale=None, cmap="Reds")`.
   `standard_scale="var"` column-z-scores; broadly-expressed markers
-  ([redacted] etc.) look "hollow" because 1.1× differences get stretched to
-  full-range contrast.
+  look "hollow" because 1.1× differences get stretched to full-range contrast.
 
 ### Parallel compute (joblib / sklearn / pyDESeq2)
 
