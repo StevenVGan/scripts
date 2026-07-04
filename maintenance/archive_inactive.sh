@@ -24,9 +24,10 @@ LOG_DIR="${LOG_DIR:-$HERE/logs}"
 mkdir -p "$LOG_DIR"
 
 # Reference FASTAs by genome — override via env if paths change
-REF_HG38="${REF_HG38:-/mnt/share/archive/bkup/ref/genome/hg38/hg38.fa}"
-REF_HG19="${REF_HG19:-/mnt/share/archive/bkup/ref/genome/hg19/hg19.fa}"
-REF_MM10="${REF_MM10:-/mnt/share/archive/bkup/ref/genome/mm10/mm10.fa}"
+REF_ROOT="${REF_ROOT:-/mnt/share/archive/bkup/ref}"   # override on a node with no NAS (e.g. REF_ROOT=$HOME/work/ref)
+REF_HG38="${REF_HG38:-${REF_ROOT}/genome/hg38/hg38.fa}"
+REF_HG19="${REF_HG19:-${REF_ROOT}/genome/hg19/hg19.fa}"
+REF_MM10="${REF_MM10:-${REF_ROOT}/genome/mm10/mm10.fa}"
 DEFAULT_GENOME="${DEFAULT_GENOME:-}"   # used only if auto-detect fails; set to e.g. hg38 to assume
 
 THREADS="${THREADS:-8}"

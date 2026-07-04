@@ -65,7 +65,10 @@ TRIM_CPU=8
 BT2_CPU=12
 BAMCOV_CPU=8
 GENOME="hg38"
-GENOME_INDEX="/mnt/share/archive/bkup/ref/align/bowtie2/${GENOME}_noalt/${GENOME}"
+# REF_ROOT = root of shared reference data (bowtie2 indexes + genome FASTAs).
+# Defaults to the NAS on this box; on a node with no NAS, export REF_ROOT (e.g. REF_ROOT=$HOME/work/ref).
+REF_ROOT="${REF_ROOT:-/mnt/share/archive/bkup/ref}"
+GENOME_INDEX="${GENOME_INDEX:-${REF_ROOT}/align/bowtie2/${GENOME}_noalt/${GENOME}}"
 BT2_MAX_FRAG=2000                       # ATAC fragments span NFR -> tri-nucleosomal
 BT2_EXTRA="${BT2_EXTRA:---no-mixed --no-discordant}"
 

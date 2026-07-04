@@ -12,9 +12,9 @@
 #   --slop BP         Extend each region by BP bp on both sides (center-based).
 #                     Default: 500 (→ 1001 bp total when centering)
 #   --genome-sizes F  Chromosome sizes file for slop (required if --slop > 0).
-#                     Default: /mnt/share/archive/ref/genome/hg38/hg38.chrom.sizes
+#                     Default: ${REF_ROOT}/genome/hg38/hg38.chrom.sizes
 #   --genome-fasta F  Reference genome FASTA.
-#                     Default: /mnt/share/archive/ref/genome/hg38/hg38.fa
+#                     Default: ${REF_ROOT}/genome/hg38/hg38.fa
 #   --no-center       Use original BED coordinates as-is (no centering).
 #   --tab             Output tab format (name, seq) instead of sequences only.
 #
@@ -28,8 +28,9 @@
 set -euo pipefail
 
 SLOP_BP=500
-GENOME_SIZES="/mnt/share/archive/bkup/ref/genome/hg38/hg38.chrom.sizes"
-GENOME_FASTA="/mnt/share/archive/bkup/ref/genome/hg38/hg38.fa"
+REF_ROOT="${REF_ROOT:-/mnt/share/archive/bkup/ref}"   # override on a node with no NAS (e.g. REF_ROOT=$HOME/work/ref)
+GENOME_SIZES="${GENOME_SIZES:-${REF_ROOT}/genome/hg38/hg38.chrom.sizes}"
+GENOME_FASTA="${GENOME_FASTA:-${REF_ROOT}/genome/hg38/hg38.fa}"
 CENTER=1
 TAB_OUT=0
 

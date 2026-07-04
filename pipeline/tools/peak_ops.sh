@@ -23,7 +23,8 @@
 set -euo pipefail
 
 SLOP_BP=0
-GENOME_SIZES="/mnt/share/archive/bkup/ref/genome/hg38/hg38.chrom.sizes"
+REF_ROOT="${REF_ROOT:-/mnt/share/archive/bkup/ref}"   # override on a node with no NAS (e.g. REF_ROOT=$HOME/work/ref)
+GENOME_SIZES="${GENOME_SIZES:-${REF_ROOT}/genome/hg38/hg38.chrom.sizes}"
 MODE=""
 MERGE=0
 UPSET_NAMES=""

@@ -80,11 +80,13 @@ THREADS=16 ./archive_inactive.sh run
 DEFAULT_GENOME=hg38 ./archive_inactive.sh run    # used only when auto-detect fails
 ```
 
-Reference defaults:
+Reference defaults derive from `REF_ROOT` (default `/mnt/share/archive/bkup/ref`;
+set `REF_ROOT=<dir>` to point all three at `<dir>/genome/<asm>/<asm>.fa`, or override
+one at a time):
 
-- `REF_HG38=/mnt/share/archive/bkup/ref/genome/hg38/hg38.fa`
-- `REF_HG19=/mnt/share/archive/bkup/ref/genome/hg19/hg19.fa`
-- `REF_MM10=/mnt/share/archive/bkup/ref/genome/mm10/mm10.fa`
+- `REF_HG38=${REF_ROOT}/genome/hg38/hg38.fa`
+- `REF_HG19=${REF_ROOT}/genome/hg19/hg19.fa`
+- `REF_MM10=${REF_ROOT}/genome/mm10/mm10.fa`
 
 ### Genome detection
 

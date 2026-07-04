@@ -661,8 +661,10 @@ references that were active when the pipeline ran. This is the drift
 detector: if a blacklist file gets replaced silently, the next
 `references.tsv` regeneration will show a different sha256 / mtime.
 
-**Bowtie2 index path convention:**
-`/mnt/share/archive/bkup/ref/align/bowtie2/<genome>_noalt/<genome>`
+**Bowtie2 index path convention:** `${REF_ROOT}/align/bowtie2/<genome>_noalt/<genome>`,
+where `REF_ROOT` defaults to the NAS (`/mnt/share/archive/bkup/ref`) and is overridable
+per node — export `REF_ROOT=$HOME/work/ref` on a box with no NAS. Genome FASTAs /
+chrom.sizes live under `${REF_ROOT}/genome/<genome>/`.
 
 ---
 
