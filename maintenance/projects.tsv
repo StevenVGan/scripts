@@ -22,7 +22,7 @@ active	seq/pro/PRO_241021_MCF7-siNEAT1_Steven	starting analysis soon (per Steven
 cleanup	seq/atac/ATAC_220316_snATAC_HepG2_ENCODE-Snyder
 cleanup	seq/chip/ChIP_240603_NONO_KDM2A_Likun-Yuliang
 cleanup	seq/chip/ChIP_ENCODE-Bernstein_EZH2_HepG2
-cleanup	seq/chip/ChIP_ENCODE-Bernstein_H3K1me1_HepG2
+cleanup	seq/chip/ChIP_ENCODE-Bernstein_H3K4me1_HepG2
 cleanup	seq/chip/ChIP_ENCODE-Bernstein_H3K9
 cleanup	seq/chip/ChIP_ENCODE-Bernstein_Histones_HepG2
 cleanup	seq/chip/ChIP_ENCODE-Bernstein_histone_MCF7
