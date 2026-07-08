@@ -16,9 +16,9 @@ stale-by-design (like the pipeline-step copies) — new work imports these.
 Use from an analysis `script/`:
 
 ```python
-import sys, matplotlib
+import os, sys, matplotlib
 matplotlib.use("Agg")
-sys.path.insert(0, "/mnt/home/digan/work/scripts/pipeline/tools/viz")   # adjust to this node's WORK root
+sys.path.insert(0, os.path.expanduser('~/work/scripts/pipeline/tools/viz'))   # node-agnostic WORK root
 from _figure_style import apply_publication_style; apply_publication_style()
 from _profile_plot import plot_profile
 ```
