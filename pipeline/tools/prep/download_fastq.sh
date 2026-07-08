@@ -10,13 +10,12 @@ set -euo pipefail
 FTP_BASE="ftp://igm-storage.ucsd.edu/260401_LH00444_0498_B235NNMLT4"
 # FTP credentials (password often contains md5sum from sequencing center)
 FTP_USER="rosenfeld"
-# Set via env for security: export FTP_PASSWORD='2Zlgavv9vj'
-# Or set here (not recommended for shared repos):
-# FTP_PASSWORD="${FTP_PASSWORD:-}"
-FTP_PASSWORD="2Zlgavv9vj"
+# Set via env for security (never hardcode in this shared/public repo):
+#   export FTP_PASSWORD='your_password'
+FTP_PASSWORD="${FTP_PASSWORD:-}"
 
 # Destination: raw_seq for downloaded data, or project-specific
-DEST_DIR="$HOME/work/raw_seq/260401_LH00444_0498_B235NNMLT4"
+DEST_DIR="${DEST_DIR:-$HOME/work/raw_seq/260401_LH00444_0498_B235NNMLT4}"
 # Priyanka / IGM CnR: FASTQs are named PS###_... ; other runs often use SG###
 FILE_PREFIX="${FILE_PREFIX:-PS}"
 # ==============================================================================
