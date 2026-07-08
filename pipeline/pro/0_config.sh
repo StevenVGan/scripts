@@ -106,7 +106,7 @@ HOMER_SS_PE="${HOMER_SS_PE:-1}"
 GENOME="${GENOME:-hg38}"
 # REF_ROOT = root of shared reference data (bowtie2 indexes + genome FASTAs).
 # Defaults to the NAS on this box; on a node with no NAS, export REF_ROOT (e.g. REF_ROOT=$HOME/work/ref).
-REF_ROOT="${REF_ROOT:-/mnt/share/archive/bkup/ref}"
+REF_ROOT="${REF_ROOT:-$([ -d /mnt/share/archive/bkup/ref ] && echo /mnt/share/archive/bkup/ref || echo "$HOME/work/ref")}"
 GENOME_INDEX="${GENOME_INDEX:-${REF_ROOT}/align/bowtie2/${GENOME}_noalt/${GENOME}}"
 
 # ---- QC (5_qc) ----

@@ -106,6 +106,11 @@ tn5_shift() {
 }
 
 # ---- main loop ----
+if ! compgen -G "${GENOME_INDEX}.1.bt2*" > /dev/null; then
+  echo "[ERROR] bowtie2 index not found at ${GENOME_INDEX}(.1.bt2) — is the NAS mounted / REF_ROOT set for a no-NAS node? (REF_ROOT=${REF_ROOT})" >&2
+  exit 1
+fi
+
 if [[ "${SE:-0}" -eq 1 ]]; then
   trimmed_files=( "${TRIM_DIR}"/*_trimmed.fq.gz )
   if (( ${#trimmed_files[@]} == 0 )); then
