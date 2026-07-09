@@ -24,7 +24,7 @@ LIVE="${LIVE:-$HOME/.claude/projects/$(printf '%s' "$HOME/work" | sed 's#/#-#g')
 # memories that describe ONE machine (not the lab) — carried once as re-validate
 # seeds, never auto-synced. This is the machine-specific subset of PROVISION
 # App-G (not App-G verbatim), aligned with MEMORY.md's re-validate header.
-NODE_SPECIFIC="reference_git_https_only reference_gh_binary_location reference_genome_fastas feedback_conda_env_build_linux01 feedback_cpu_cap_16 reference_linux01_vscode_clipboard_glibc"
+NODE_SPECIFIC="reference_git_https_only reference_gh_binary_location reference_genome_fastas feedback_conda_env_build_linux01 feedback_cpu_cap_16 reference_cpu_cap_genome1 reference_linux01_vscode_clipboard_glibc"
 is_node_specific() { case " $NODE_SPECIFIC " in *" $1 "*) return 0 ;; *) return 1 ;; esac; }
 
 case "${1:-}" in
