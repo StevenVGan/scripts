@@ -27,6 +27,13 @@ set -euo pipefail
 # Robust to project rename / different home / different server. Override for out-of-tree runs:
 #   BASE=/path/to/project ./run_all.sh
 BASE="${BASE:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
+# ---- Guard: refuse to scaffold an output tree inside the pipeline template folder ----
+# A real project's BASE never contains these sibling dirs; the template root always does.
+if [[ -d "$BASE/cnr" && -d "$BASE/tools" && -d "$BASE/templates" ]]; then
+  echo "ERROR: BASE resolved to the pipeline template root ($BASE)." >&2
+  echo "       Run from a project's script/ dir, or set BASE=/path/to/project." >&2
+  return 1 2>/dev/null || exit 1
+fi
 
 # ---- Conda env "bio" (prepend to PATH when directory exists) ----
 CONDA_BIO_ENV="${CONDA_BIO_ENV:-${HOME}/miniforge3/envs/bio}"
@@ -183,7 +190,14 @@ log_start() {
   # Logs under LOG_DIR/keep/ are exempt (glob doesn't recurse). See scripts/CONVENTIONS.md §10.
   local keep_n="${LOG_KEEP_N:-3}"
   if [[ -d "$LOG_DIR" && "$keep_n" =~ ^[0-9]+$ ]]; then
-    ls -1t "${LOG_DIR}/${step}_"*.log 2>/dev/null | tail -n +$((keep_n + 1)) | xargs -r rm -f || true
+    # CWD-safe prune (2026-07-12 fix): find stays anchored to $LOG_DIR and never lists the
+    # current directory even when zero logs match (unlike `ls` with a nullglob-collapsed arglist).
+    local -a old=()
+    mapfile -t old < <(
+      find "$LOG_DIR" -maxdepth 1 -type f -name "${step}_*.log" \
+        -printf '%T@\t%p\n' 2>/dev/null | sort -rn | tail -n +"$((keep_n + 1))" | cut -f2-
+    )
+    (( ${#old[@]} > 0 )) && rm -f "${old[@]}" || true
   fi
 
   local logfile="${LOG_DIR}/${step}_$(date +%Y%m%d_%H%M%S).log"
@@ -225,7 +239,7 @@ emit_references_tsv() {
 
     lock_dir="${HOME}/work/scripts/env/lock"
     if [[ -d "$lock_dir" ]]; then
-      latest_lock=$(ls -1t "$lock_dir"/bio.*.yml 2>/dev/null | head -1 || true)
+      latest_lock=$(find "$lock_dir" -maxdepth 1 -type f -name 'bio.*.yml' -printf '%T@\t%p\n' 2>/dev/null | sort -rn | head -1 | cut -f2-)
       if [[ -n "$latest_lock" ]]; then
         sz=$(stat -c%s "$latest_lock" 2>/dev/null || echo "-")
         mt=$(date -u -d "@$(stat -c%Y "$latest_lock" 2>/dev/null)" -Iseconds 2>/dev/null || echo "-")
