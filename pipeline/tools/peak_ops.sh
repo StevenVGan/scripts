@@ -167,8 +167,12 @@ TMP_UP=$(mktemp -d)
 BED_ARGS=()
 for i in "${!TMPS[@]}"; do
   name=$(basename "${INPUTS[$i]}" .annotatePeaks.txt | sed 's/\.\(bed\|narrowPeak\|broadPeak\)$//')
-  cp "${TMPS[$i]}" "$TMP_UP/${name}.bed"
-  BED_ARGS+=("$TMP_UP/${name}.bed")
+  # BUGFIX 2026-07-15: index-prefix the temp copy. Two inputs with the SAME basename (e.g. two
+  # projects' peaks/macs3/ZNF432_filtered.bed) previously collided here — the 2nd cp overwrote the
+  # 1st, so the UpSet/Venn R scripts received two identical files and drew "N/N, all-shared" instead
+  # of the real overlap. Set labels come from --names (or basename fallback), so the prefix is safe.
+  cp "${TMPS[$i]}" "$TMP_UP/${i}_${name}.bed"
+  BED_ARGS+=("$TMP_UP/${i}_${name}.bed")
 done
 
 run_upset() {
