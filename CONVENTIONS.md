@@ -612,6 +612,52 @@ qPCR validation panel derived from that project's `analysis/` finding.
 
 ---
 
+## §trackhub — UCSC track hubs
+
+When you need to *look at* bigWigs in the genome browser — for yourself, a
+collaborator, or a figure — the hub text that wires them into UCSC is a tracked
+artifact. It lives in the top-level **`~/work/trackhub/`** repo, a category dir
+(peer to `experiments/`, `reagents/`), **not** a `seq/_joint/`. A hub isn't an
+analysis of a deposit and isn't cross-project *code* — it's a viewing surface,
+often over data the lab didn't generate (a collaborator's read-only bigWigs).
+
+**Flat tree, genome-prefixed hub subdirs.** One self-contained subdir per hub, its
+name leading with the genome so `ls` clusters by assembly; project/thrust is a
+`REGISTRY.tsv` column, never a folder.
+
+```
+~/work/trackhub/                    # GIT REPO — keep PRIVATE (READMEs/REGISTRY/sources name internal analyses)
+├── README.md  REGISTRY.tsv         # runbook; multi-axis index of every hub
+├── bin/{build_hub.sh,upload_hub.sh,hubtools}   # shared machinery (hubtools vendored, pure-python)
+├── ref/<genome>.chrom.sizes
+└── <genome>_<subject>/             # a hub, e.g. mm10_mCort_H2O2/
+    ├── README.md  sources.tsv  tracks.tsv        # provenance + source->TRUE-label build map
+    ├── hub/hub.txt                 # tracked (KB): single useOneFile composite hub
+    ├── inputs/                     # symlinks to source bigWigs (gitignored; never copied)
+    └── upload_stage/               # hub.txt + bigWig symlinks ONLY (gitignored; clean upload set)
+```
+
+**Never copy the bigWigs** — symlink them and upload from the source in place (the
+1–2 GB never lands in the repo). **Hand-author `hub/hub.txt`** (a plain composite +
+per-subtrack `priority`/`color`); do not rely on `hubtools make` for a hub of record
+— it derives labels/grouping from filenames, which can be mislabeled. Any
+source->TRUE-condition correction lives once in `tracks.tsv`.
+
+**hubSpace + hygiene.** Hubs upload to UCSC hubSpace (`hubtools up`, needs
+`~/.hubtools.conf` with **UNQUOTED** `apiKey` + `tusUrl=https://hubspace.soe.ucsc.edu/files`
+— the default `gi.ucsc.edu` fails TLS on linux01, and quoted values break parseConf).
+`upload_hub.sh` is **allow-list** (only the hub's bigWigs + `hub.txt`), so
+READMEs/notes never ride along. Uploaded `hub.txt` labels stay **descriptive-only**
+(no thrust IDs/hypotheses — the share link is unlisted, not access-controlled). No
+upload without Steven's sign-off; the API key is his secret, kept in `$HOME`.
+
+**Gitignore + graduation.** bigWigs ignored (incl. `*.bigWig` capital-W casing on its
+own line per §3); `**/inputs/*` + `!**/inputs/README.md`; `upload_stage/`, `*.conf`.
+The `bin/` scripts are config-at-top with the hub dir as arg → graduate to
+`scripts/pipeline/tools/trackhub/` on the 2nd hub that reuses them (§5).
+
+---
+
 ## §7 — PWM motif analysis usage
 
 `PWM motif analysis/` is an independent git repo
