@@ -56,7 +56,10 @@ fi
 RAW_DIR="${BASE}/data"              # 1_trim_qc input
 TRIM_DIR="${BASE}/cleandata"        # 1_trim_qc out; 2_bowtie2 input
 ALIGN_DIR="${BASE}/align"
-BAM_DIR="${ALIGN_DIR}/bam"           # 2, 3, 4.1, 4.2, 5_qc
+# BAM_DIR is env-overridable so a variant BAM set (e.g. a duplicate-capped rebuild)
+# can be run through steps 2-5 without touching the canonical align/bam master.
+# NB BAMQC_DIR follows BAM_DIR, so a variant run keeps its QC beside its own BAMs.
+BAM_DIR="${BAM_DIR:-${ALIGN_DIR}/bam}"   # 2, 3, 4.1, 4.2, 5_qc
 TRACK_DIR="${ALIGN_DIR}/track"       # 2_bowtie2 bigWigs
 BAMQC_DIR="${BAM_DIR}/bamqc"        # 2 (idxstats, stats), 5_qc
 TAG_DIR="${ALIGN_DIR}/tags"         # 3_homer_tags out; 4.2 input
@@ -108,6 +111,21 @@ IGNORE_CHR="chrM"
 
 # ---- Space saving (2_bowtie2) ----
 DELETE_TRIMMED_AFTER_ALIGN=1   # delete *_val_*.fq.gz after alignment
+
+# ---- Positional-duplicate handling (2_bowtie2 tracks, 3_homer_tags, 4.1_peak_macs3) ----
+# CUT&RUN/CUT&Tag cut at defined positions flanking the bound factor, so independent
+# molecules legitimately share fragment ends. A hard cap of 1 can therefore discard a
+# large fraction of real signal, and it does so unevenly across libraries (the cap bites
+# hardest in the lowest-complexity samples). These three knobs set the cap per tool.
+# DEFAULTS REPRODUCE THE HISTORICAL BEHAVIOUR (cap = 1) — existing projects are unchanged.
+#   BAMCOV_IGNOREDUP : 1 = pass --ignoreDuplicates to bamCoverage (cap 1); 0 = keep all
+#   HOMER_TBP        : makeTagDirectory max tags per bp; EMPTY = no cap (HOMER's own default)
+#   MACS3_KEEPDUP    : MACS3 --keep-dup value: "1", "3", ..., "all", or "auto"
+# If BAM_DIR already points at a PRE-CAPPED BAM set, set all three to their no-cap values
+# (0 / empty / all) or the cap is applied twice.
+BAMCOV_IGNOREDUP="${BAMCOV_IGNOREDUP:-1}"
+HOMER_TBP="${HOMER_TBP-1}"     # NB "-" not ":-" so HOMER_TBP="" means "no cap", not "1"
+MACS3_KEEPDUP="${MACS3_KEEPDUP:-1}"
 
 # ---- Peak calling (4.1 MACS3, 4.2 HOMER) ----
 PEAKCALL_GROUPS_FILE="${BASE}/peakcall_groups.tsv"

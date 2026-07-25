@@ -94,7 +94,8 @@ if [[ "${SE:-0}" -eq 1 ]]; then
     [[ ! -f "${BAMQC_DIR}/${sample_name}.stats" ]] && samtools stats "$sorted_bam" > "${BAMQC_DIR}/${sample_name}.stats"
 
     if [[ ! -f "$bw_file" ]]; then
-      bam_cov_args=(-b "$sorted_bam" -o "$bw_file" -p "$BAMCOV_CPU" -bs "$BINSIZE" --effectiveGenomeSize "$GENOMESIZE" --normalizeUsing "$NORMALIZE" --ignoreForNormalization "$IGNORE_CHR" --ignoreDuplicates)
+      bam_cov_args=(-b "$sorted_bam" -o "$bw_file" -p "$BAMCOV_CPU" -bs "$BINSIZE" --effectiveGenomeSize "$GENOMESIZE" --normalizeUsing "$NORMALIZE" --ignoreForNormalization "$IGNORE_CHR")
+      [[ "${BAMCOV_IGNOREDUP:-1}" -eq 1 ]] && bam_cov_args+=( --ignoreDuplicates )
       [[ -f "${BLACKLIST:-}" ]] && bam_cov_args+=( --blackListFileName "$BLACKLIST" )
       bamCoverage "${bam_cov_args[@]}"
     fi
@@ -133,7 +134,8 @@ else
     [[ ! -f "${BAMQC_DIR}/${sample_name}.stats" ]] && samtools stats "$sorted_bam" > "${BAMQC_DIR}/${sample_name}.stats"
 
     if [[ ! -f "$bw_file" ]]; then
-      bam_cov_args=(-b "$sorted_bam" -o "$bw_file" -p "$BAMCOV_CPU" -bs "$BINSIZE" --effectiveGenomeSize "$GENOMESIZE" --normalizeUsing "$NORMALIZE" --ignoreForNormalization "$IGNORE_CHR" --ignoreDuplicates)
+      bam_cov_args=(-b "$sorted_bam" -o "$bw_file" -p "$BAMCOV_CPU" -bs "$BINSIZE" --effectiveGenomeSize "$GENOMESIZE" --normalizeUsing "$NORMALIZE" --ignoreForNormalization "$IGNORE_CHR")
+      [[ "${BAMCOV_IGNOREDUP:-1}" -eq 1 ]] && bam_cov_args+=( --ignoreDuplicates )
       [[ -f "$BLACKLIST" ]] && bam_cov_args+=( --blackListFileName "$BLACKLIST" )
       bamCoverage "${bam_cov_args[@]}"
     fi

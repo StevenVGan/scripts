@@ -20,7 +20,8 @@ shopt -s nullglob
 # Behavior
 #   - Iterates over all *_sorted.bam files.
 #   - Skips samples if their tag directory already exists.
-#   - Uses makeTagDirectory with "-tbp 1" (format auto-detected; HOMER converts BAM on the fly).
+#   - Uses makeTagDirectory with "-tbp ${HOMER_TBP}" (default 1; empty = no cap).
+#     Format auto-detected; HOMER converts BAM on the fly.
 #
 # Logging
 #   - Writes a timestamped log to ${LOG_DIR}/3_homer_tags_*.log
@@ -57,7 +58,11 @@ for bam in "${sorted_bams[@]}"; do
   fi
 
   echo "[STEP3] Building tag dir: $sample_name"
-  makeTagDirectory "$outdir" "$bam" -tbp 1
+  tagdir_cmd=( makeTagDirectory "$outdir" "$bam" )
+  # HOMER_TBP empty => omit -tbp entirely (HOMER default = no cap). See 0_config.sh.
+  [[ -n "${HOMER_TBP:-}" && "${HOMER_TBP}" != "0" ]] && tagdir_cmd+=( -tbp "$HOMER_TBP" )
+  echo "[STEP3] tags-per-bp cap: ${HOMER_TBP:-none}"
+  "${tagdir_cmd[@]}"
 done
 
 echo "=== STEP 3 complete ==="

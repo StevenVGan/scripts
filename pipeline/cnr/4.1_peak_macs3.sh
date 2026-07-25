@@ -89,6 +89,7 @@ while IFS=$'\t' read -r ip_spec ctrl_spec name type _rest; do
     -g "$MACS3_GENOMESIZE"
     -q "$MACS3_FDR"
     --format "$MACS3_FORMAT"
+    --keep-dup "$MACS3_KEEPDUP"
     --outdir "$MACS3_DIR"
     --name "$name"
   )
