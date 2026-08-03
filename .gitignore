@@ -14,3 +14,6 @@ __pycache__/
 # maintenance/: run outputs (regeneratable from archive_inactive.sh inventory/audit)
 maintenance/inventory.tsv
 maintenance/audit.tsv
+
+# VS Code Local History — edit snapshots must never reach this PUBLIC repo
+.history/

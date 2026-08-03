@@ -7,7 +7,7 @@ set -euo pipefail
 # ==== CONFIG: Edit these for your project =====================================
 # Example: CnR Seq data from submission 1027
 # Sequencing data URL (FTP base, no trailing slash)
-FTP_BASE="ftp://igm-storage.ucsd.edu/260401_LH00444_0498_B235NNMLT4"
+FTP_BASE="${FTP_BASE:-ftp://igm-storage.ucsd.edu/260401_LH00444_0498_B235NNMLT4}"
 # FTP credentials (password often contains md5sum from sequencing center)
 FTP_USER="rosenfeld"
 # Set via env for security (never hardcode in this shared/public repo):
