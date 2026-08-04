@@ -610,6 +610,23 @@ deposit?" — yes → project-local; no → the top-level repo.
 First instance (project-local): a `seq/<assay>/<project>/experiments/<name>_v1/`
 qPCR validation panel derived from that project's `analysis/` finding.
 
+**One run, several readouts — hub and spokes.** A bench run often produces more
+than one readout, and they do not share a home: sequencing graduates to
+`seq/<assay>/<project>/` while a qPCR or flow readout has nowhere else to go. Do
+**not** nest the second readout inside the first folder, and do not rename the
+run folder to chase whichever readout is currently largest. Keep the run's own
+dated dir as the **bench record** — protocol, samples, cell/treatment history —
+and give each readout the home that fits it, cross-referenced in prose from the
+run README. `~/work/experiments/` is organised by **dated bench events**, so a
+readout run weeks after the harvest is its own dated sibling, named for the date
+that readout was generated.
+
+Shape: `experiments/<YYMMDD>_<run>_v<N>/` is the run record and points at
+`experiments/<YYMMDD>_<run>_qpcr_v<N>/` (dated by its own plate run, typically
+weeks later) and at `seq/<assay>/<project>/` once the sequencing returns. Each
+readout README points back at the run record, so the run is reachable from any
+spoke.
+
 ---
 
 ## §trackhub — UCSC track hubs
