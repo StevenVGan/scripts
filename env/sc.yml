@@ -65,7 +65,32 @@ dependencies:
   # prior-knowledge resources (decoupler / ligand-receptor)
   - omnipath
 
+  # enrichment / DE / prior-knowledge (conda: bioconda has all of these)
+  - gseapy
+  - pydeseq2
+  - decoupler-py
+  - gprofiler-official
+
+  # figures / documents / IO (conda-forge)
+  - cairosvg
+  - weasyprint
+  - upsetplot
+  - matplotlib-venn
+  - logomaker
+  - pypdf
+  - python-docx
+  - markdown
+  - hdf5plugin
+  - pyreadr
+  - xlrd
+  - zopfli
+
   - pip:
+    # no conda build exists for these
+    - pychromvar
+    - xenaPython
+    # pinned: 0.13.0 is the last manylinux2014 wheel; newer needs glibc >2.23
+    - pillow-heif==0.13.0
     # multimodal containers
     - mudata
     - muon
