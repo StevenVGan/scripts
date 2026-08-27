@@ -53,6 +53,18 @@ dependencies:
   # snATAC pythonic stack — bioconda binary (avoids Rust/maturin source build)
   - snapatac2
 
+  # plotting / label placement
+  - adjusttext
+
+  # loess smoothing (scanpy highly_variable_genes flavor="seurat_v3")
+  - scikit-misc
+
+  # random-forest feature ranking (sklearn-compatible ranger)
+  - skranger
+
+  # prior-knowledge resources (decoupler / ligand-receptor)
+  - omnipath
+
   - pip:
     # multimodal containers
     - mudata

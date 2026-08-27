@@ -1,18 +1,38 @@
 # `scripts/env/` — conda environment tracking
 
-The `bio` conda env is the single environment all pipelines (cutrun, csRNA,
-proseq, atac) and tools rely on. This directory tracks its contents over
-time so old projects remain reproducible after upgrades.
+This directory tracks the conda environments the workspace depends on, so old
+projects stay reproducible after upgrades. `bio` is the workhorse for the bulk
+pipelines (cutrun, csRNA, proseq, atac) and the shared tools; `sc`, `meth`,
+`rna`, `primer`, `pwm2` and `pwm2-pb` serve single-cell, methylome, RNA-seq,
+primer-design and PWM work respectively.
 
-## Files
+## Files — three kinds, updated differently
 
-- **`bio.yml`** — current `bio` env, exported via `conda env export`.
-  Re-export whenever you install/upgrade tools.
-- **`lock/bio.YYYY-MM-DD.yml`** — dated snapshots. Save one before any
-  major upgrade. Each per-project `references.tsv` records which lock
-  file was active when the project's pipeline ran.
+Telling them apart matters: **a `conda env export` over a spec destroys it.**
+The marker is pinning: an export pins every dependency `name=version=build` and
+usually ends with a `prefix:` line; a spec pins almost nothing. (Don't rely on
+`prefix:` alone — `pwm2.yml` is an export that had its `prefix:` line stripped.)
+
+- **Spec** — `sc.yml`, `meth.yml`. Hand-written, grouped, commented, loosely
+  pinned (usually only `python=`). Records *intent* and must stay solvable on a
+  fresh box. **Hand-edit these; never `conda env export` over them.** Add the
+  package plus a one-line comment saying what needs it. `meth.yml`, for example,
+  carries the reasoning for pinning `setuptools<81` and for replacing
+  `ucsc-liftover` with `CrossMap` on glibc 2.23 — an export would erase it.
+- **Export** — `bio.yml`, `rna.yml`, `primer.yml`, `pwm2.yml`, `pwm2-pb.yml`.
+  `conda env export` output: every dependency pinned `name=version=build`, plus
+  a `prefix:` line. Re-export after any install.
+- **Lock** — `lock/<env>.YYYY-MM-DD.yml`. Always a full export, for *both* kinds
+  above. The lock is where exactness lives, which is why a spec is free to stay
+  loose. Append-only, never edited or re-dated: per-project `references.tsv`
+  rows pin these **by sha256**, so regenerating one breaks a committed
+  reproducibility pin.
 
 ## Rebuild commands
+
+> **Note:** `bio.yml` no longer solves on linux01 — see the caveat under "pip
+> installs on this box" below, and use the `--explicit` cache route instead.
+> Specs (`sc.yml`, `meth.yml`) do still solve here.
 
 Current env (matches what's live now):
 ```
@@ -27,11 +47,15 @@ conda env create -n bio_old -f lock/bio.2026-04-28.yml
 
 ## When to update
 
-- **Re-export `bio.yml`** every time you `conda install` / `conda update` /
-  `pip install` into the `bio` env:
+- **An export** (`bio`, `rna`, `primer`, `pwm2`, `pwm2-pb`) — re-export every
+  time you `conda install` / `conda update` / `pip install` into it:
   ```
   conda env export -n bio > scripts/env/bio.yml
   ```
+- **A spec** (`sc`, `meth`) — hand-edit it instead, adding the package under the
+  right comment group. `check_env_drift.sh` flags the env once its `conda-meta`
+  is newer than the yml, and editing the file is what clears the flag; committing
+  a lock alone will not.
 - **Snapshot a new lock** before any major upgrade (e.g. bumping HOMER,
   MACS3, bowtie2):
   ```
@@ -63,9 +87,10 @@ escapes the guard. Fix was `pip uninstall pyarrow`; nothing in `bio` needed it.
 2. **Import-test immediately after any pip install**, in a fresh process:
    `$HOME/miniforge3/envs/<env>/bin/python -c "import <pkg>"`. A wheel that
    installs cleanly can still be unusable here.
-3. Re-export the yml afterwards (see "When to update" above) so the pip package
-   is declared — `check_env_drift.sh` flags pip packages that are installed but
-   absent from the committed yml.
+3. Declare it afterwards (see "When to update" above): re-export an export,
+   hand-edit a spec. `check_env_drift.sh` reports pip packages installed but
+   absent from an **export**-style yml (`[pip-drift]`), and any pip package
+   shipping compiled extensions that cannot import (`[pip-BROKEN]`).
 4. Never set `CONDA_OVERRIDE_GLIBC=2.28` to force a package in. It silences the
    install-time solver check only; the ELF symbol requirement is still enforced
    by `ld.so` at runtime, which is exactly how these failures happen.
