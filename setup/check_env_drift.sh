@@ -77,10 +77,22 @@ pip_check_env() {
     # env had no pip packages has no pip: section at all, and every pip package
     # installed since is exactly the drift to catch (this is how `primer` hid
     # two undeclared pip packages).
-    local declared="" is_export=0
-    if [[ -n "$yml" ]] && { grep -qE '^prefix:' "$yml" \
-                            || grep -qE '^[[:space:]]*-[[:space:]][^ ]+=[^ ]+=' "$yml"; }; then
-        is_export=1
+    local declared="" is_export=0 dep_lines pin_lines
+    if [[ -n "$yml" ]]; then
+        # Third test, for `conda env export --no-builds`: no prefix: line and no
+        # build strings, just `name=version` -- vienna.yml is one. Ratio, not
+        # presence: a spec pins the odd thing (sc.yml 2/68, meth.yml 1/38 = 3%)
+        # while any export pins nearly everything (93-99%), so 50% separates them
+        # with a wide margin.
+        dep_lines="$(grep -cE '^[[:space:]]*- ' "$yml" 2>/dev/null || true)"; dep_lines="${dep_lines:-0}"
+        pin_lines="$(grep -E '^[[:space:]]*- ' "$yml" 2>/dev/null | grep -c '=' || true)"; pin_lines="${pin_lines:-0}"
+        if grep -qE '^prefix:' "$yml" \
+           || grep -qE '^[[:space:]]*-[[:space:]][^ ]+=[^ ]+=' "$yml" \
+           || (( dep_lines > 0 && pin_lines * 100 / dep_lines >= 50 )); then
+            is_export=1
+        fi
+    fi
+    if (( is_export )); then
         declared="$(awk '
             /^[[:space:]]*-[[:space:]]*pip:[[:space:]]*$/ { f=1; pi=index($0,"-"); next }
             f && /^[[:space:]]*$/                          { next }
