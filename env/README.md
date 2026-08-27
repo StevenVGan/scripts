@@ -20,8 +20,9 @@ usually ends with a `prefix:` line; a spec pins almost nothing. (Don't rely on
   carries the reasoning for pinning `setuptools<81` and for replacing
   `ucsc-liftover` with `CrossMap` on glibc 2.23 — an export would erase it.
 - **Export** — `bio.yml`, `rna.yml`, `primer.yml`, `pwm2.yml`, `pwm2-pb.yml`.
-  `conda env export` output: every dependency pinned `name=version=build`, plus
-  a `prefix:` line. Re-export after any install.
+  `conda env export` output: every dependency pinned `name=version=build`, and
+  usually a trailing `prefix:` line (`pwm2.yml` has had its stripped, so the
+  pinning is the reliable marker). Re-export after any install.
 - **Lock** — `lock/<env>.YYYY-MM-DD.yml`. Always a full export, for *both* kinds
   above. The lock is where exactness lives, which is why a spec is free to stay
   loose. Append-only, never edited or re-dated: per-project `references.tsv`

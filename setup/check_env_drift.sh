@@ -49,10 +49,12 @@ done
 #       leaves the linker holding a half-loaded dependency and an unrelated
 #       call later segfaults in ld-2.23.so. Always reported.
 #   (b) pip-drift — a pip package installed but absent from the yml. Only
-#       checked for EXPORT-style ymls (those with a `prefix:` line, written by
-#       `conda env export`), which claim to enumerate everything. Hand-written
-#       specs (sc.yml, meth.yml) list only DIRECT pip deps while site-packages
-#       also holds their transitive deps, so comparing against those is noise.
+#       checked for EXPORT-style ymls (`conda env export` output, recognised by
+#       a `prefix:` line OR any `name=version=build` pin -- pwm2.yml is an
+#       export whose `prefix:` was stripped), which claim to enumerate
+#       everything. Hand-written specs (sc.yml, meth.yml) list only DIRECT pip
+#       deps while site-packages also holds their transitive deps, so comparing
+#       against those is noise.
 pipbad=0
 
 pip_check_env() {
