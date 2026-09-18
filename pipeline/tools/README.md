@@ -53,7 +53,9 @@ For generic bigWig heatmaps (peaks / TSS / gene bodies) without Method 2 site-cl
 | **intersect_peaks.sh** | Wrapper for `peak_ops.sh --mode intersect` (same BED + UpSet/Venn) | `./intersect_peaks.sh [--viz …] [--slop BP] [--names "N1,N2,..."] OUTPUT.bed INPUT1 INPUT2 [...]` |
 | **peak_ops.sh** | Peak set ops: intersect, distinct, or union + optional UpSet / Venn | `./peak_ops.sh --mode MODE [--viz none\|upset\|venn\|both] [--slop BP] [--names "N1,N2,..."] OUTPUT.bed INPUT1 INPUT2 [...]` |
 | **getfasta.sh** | Extract sequences from reference genome for BED regions | `./getfasta.sh [--slop BP] [--no-center] [--tab] OUTPUT.txt INPUT1.bed [INPUT2.bed ...]` |
-| **subsample_data.sh** | Subsample FASTQs (e.g. 1M reads) for testing | Uses `0_config.sh` from `../cutrun/` or set `CONFIG_FILE=/path/to/project/0_config.sh`; needs `seqtk` |
+| **subsample_data.sh** | Subsample FASTQs (e.g. 1M reads) for testing | Uses `0_config.sh` from `../cnr/` or set `CONFIG_FILE=/path/to/project/0_config.sh`; needs `seqtk` |
+| **igm_manifest.py** | Paste-ready TSVs for the IGM Illumina submission form (info block + 12-column sample table) | `python3 ./igm_manifest.py --info defaults.tsv --info submission.tsv --samples samples.tsv --out-prefix <prefix>` (stdlib only; validates indexes, pools and required cells — see `--help`); private submitter defaults live in `~/work/lab_forms/` |
+| **viz/** | Shared figure helpers: `_figure_style.py` (`apply_publication_style()`) + `_profile_plot.py` | Import from here or copy `_figure_style.py` verbatim into an analysis `script/`; see [viz/README.md](viz/README.md) |
 
 ## Examples
 
@@ -186,4 +188,4 @@ Requires: `curl`, `md5sum`. Writes `*.part.*` then renames to `SRR....fastq.gz`.
 - **prep/** (**download_fastq**, **download_geo_fastq_ena**, **link_fastq**, **merge_lanes_inplace**, **link_merged_fastqs**) and **subsample_data**: set paths via script config or env; project wrappers should `exec` scripts under **`tools/prep/`** where appropriate.
 - **peak_ops `--viz`**: Venn diagrams use the same **mutually exclusive peak partitions** as the UpSet right-bar counts ([peak_vennDiagram.R](peak_vennDiagram.R)); not supported for more than four sets (use UpSet).
 - **UpSet (5+ sets):** [peaks_ops_upsetR.R](peaks_ops_upsetR.R) omits per-bar colored **queries** when **n > 4** to avoid an UpSetR bug; counts and default UpSet bars are unchanged.
-- **subsample_data**: Uses `../cutrun/0_config.sh` when run from `pipeline/tools/`, or set `CONFIG_FILE=/path/to/project/script/0_config.sh` for your project.
+- **subsample_data**: Uses `../cnr/0_config.sh` when run from `pipeline/tools/`, or set `CONFIG_FILE=/path/to/project/script/0_config.sh` for your project.

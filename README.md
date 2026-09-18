@@ -1,8 +1,8 @@
 # Analysis Scripts
 
-Bash + Python scripts for CUT&RUN, ChIP-seq, ATAC, csRNA, and PRO-seq
-analysis pipelines, plus shared tools used across `~/work/seq/`
-projects.
+Bash + Python scripts for CUT&RUN / CUT&Tag / ChIP-seq, ATAC, csRNA and
+PRO-seq upstream pipelines, plus shared tools, project scaffolding, conda-env
+tracking and maintenance used across `~/work/seq/` projects.
 
 ## Conventions (read this first)
 
@@ -17,13 +17,17 @@ README and per-project READMEs assume CONVENTIONS.md.
 ```
 scripts/
 ├── CONVENTIONS.md         # source of truth for ~/work/ layout (read first)
-├── env/                   # conda env tracking (bio.yml + dated lock/) — see env/README.md
+├── env/                   # conda env tracking: bio rna sc meth primer pwm2 pwm2-pb vienna + dated lock/ — see env/README.md
+├── setup/                 # new_project.sh scaffolder, gitall.sh, check_env_drift.sh, clone_all.sh, sync_brain.sh, bootstrap.md
+├── maintenance/           # archive_inactive.sh (BAM→CRAM for inactive projects), dedup/dupescan.py
 ├── pipeline/              # All standard pipelines + shared tools
-│   ├── cutrun/            # CUT&RUN: trim → align → peak call → QC
-│   ├── csRNA/             # csRNA fork: post-trim MultiQC gate, strand bigWigs
-│   ├── proseq/            # PRO-seq fork: strand flip, pausing index
+│   ├── cnr/               # CUT&RUN (also CUT&Tag / ChIP via --dest): trim → align → peak call → QC
+│   ├── csrna/             # csRNA fork: post-trim MultiQC gate, strand bigWigs
+│   ├── pro/               # PRO-seq fork: strand flip, pausing index
 │   ├── atac/              # ATAC-seq pipeline
-│   └── tools/             # Reusable utilities; topic subfolders OK (see CONVENTIONS.md §5)
+│   ├── multiome/          # intentionally empty scaffold (single-cell work is project-local; CONVENTIONS §12)
+│   ├── templates/         # canonical scaffolding templates (gitignore, TSVs, README)
+│   └── tools/             # Reusable utilities; prep/ + viz/ subfolders; topic subfolders OK (see CONVENTIONS.md §5)
 ├── docs/                  # Tutorials + GitHub Pages (rendered HTML)
 ├── project_archive/       # Archived project-specific scripts (by assay type)
 ├── legacy/                # Deprecated pipelines (MACS2-based)
@@ -35,21 +39,25 @@ scripts/
 For a **new sequencing project**, see CONVENTIONS.md `§setup`. The short
 version:
 
-1. `cp scripts/pipeline/<assay>/* seq/<assay>/<new_project>/script/pipeline/`
-2. Edit `0_config.sh` (BASE, GENOME, SE)
-3. Author `samples.tsv` and `peakcall_groups.tsv` in the project root
-4. `./run_all.sh` — `references.tsv` is auto-emitted by `5_qc.sh`
+1. `scripts/setup/new_project.sh <cnr|csrna|pro|atac> <project_name>` (`--dest cnt|chip`, `--se`, `--genome`)
+   — stamps the flat `script/` (numbered steps as untracked copies), `.gitignore`, template TSVs, README
+2. Author `link_sample.tsv`, `samples.tsv` and `peakcall_groups.tsv`; set `RAW_DIR` in `script/link_fastq.sh`
+3. `cd script && ./link_fastq.sh && ./run_all.sh` — `references.tsv` is auto-emitted by `5_qc.sh`
+4. Bulk RNA-seq has no pipeline dir yet (CONVENTIONS §setup); single-cell / re-analysis projects are built by hand (§12, §setup)
 
 ## Pipeline Overview
 
 | Folder | Purpose |
 |--------|---------|
-| **pipeline/cutrun** | Full CUT&RUN upstream: Trim Galore → Bowtie2 → HOMER tags → MACS3/HOMER peaks → QC + MultiQC |
-| **pipeline/csRNA** | csRNA fork of cutrun: post-trim MultiQC gate, strand bigWigs, HOMER `-sspe` |
-| **pipeline/proseq** | PRO-seq fork: poly-A trim (1.1), strand flip, pausing index (4.3), divergent calls |
+| **pipeline/cnr** | Full CUT&RUN upstream: Trim Galore → Bowtie2 → HOMER tags → MACS3/HOMER peaks → QC + MultiQC. CUT&Tag and ChIP projects reuse it (`new_project.sh cnr <name> --dest cnt`) |
+| **pipeline/csrna** | csRNA fork of cnr: post-trim MultiQC gate, strand bigWigs, HOMER `-sspe` |
+| **pipeline/pro** | PRO-seq fork: poly-A trim (1.1), strand flip, pausing index (4.3), divergent calls |
 | **pipeline/atac** | ATAC-seq pipeline (paired-end, fragment-size aware) |
-| **pipeline/tools** | Standalone utilities: heatmaps, BED liftover, peak set ops, getfasta, **go_enrichr.py** / **annotation_pie.py**; topic subfolders for methodology families (e.g. `cleavage/`, `cobinding/`) per CONVENTIONS.md §5; **prep/** = IGM/ENA FASTQ download + link/merge |
-| **env/** | `bio.yml` (current conda env) + `lock/bio.<date>.yml` (dated snapshots). See `env/README.md` |
+| **pipeline/templates** | Scaffolding templates consumed by `setup/new_project.sh` (gitignore, `samples` / `link_sample` / `peakcall_groups` / `tss_groups` TSV headers, project README; `README.analysis.md` is copied by hand per CONVENTIONS §11) |
+| **pipeline/tools** | Standalone utilities: heatmaps, BED liftover, peak set ops, getfasta, **go_enrichr.py** / **annotation_pie.py**, **igm_manifest.py** (IGM submission TSVs); **prep/** = IGM/ENA FASTQ download + link/merge; **viz/** = shared matplotlib style + profile plotter; topic subfolders for methodology families per CONVENTIONS.md §5 |
+| **setup/** | `new_project.sh` (project scaffolder), `gitall.sh` (dirty/ahead report for repos up to two levels below `~/work`; per-project repos under `seq/<assay>/<project>/` are not scanned), `check_env_drift.sh` (env newer than its yml), `clone_all.sh` + `bootstrap.md` (second-node setup), `sync_brain.sh` |
+| **maintenance/** | `archive_inactive.sh` (lossless BAM→CRAM + cleanup for `projects.tsv` rows marked `cleanup`), `dedup/dupescan.py` (cross-volume duplicate survey) |
+| **env/** | One yml per tracked env (`bio`, `rna`, `sc`, `meth`, `primer`, `pwm2`, `pwm2-pb`, `vienna`) + `lock/<env>.<date>.yml` snapshots. Spec vs export rules in `env/README.md` |
 | **project_archive** | One-off scripts from past projects (ChIP-seq, ATAC-seq, PRO-seq, CUT&RUN) |
 | **legacy** | Old MACS2-based pipeline; kept for reference |
 | **experimental** | Testing MACS3, HOMER, SEACR peak callers; peak set modes (ComplexHeatmap UpSet) |
@@ -57,13 +65,16 @@ version:
 
 ## Requirements
 
-- The **`bio` conda env** — single env all pipelines and tools use
+- The **`bio` conda env** — the env the bulk pipelines and tools use
   (`trim_galore`, `cutadapt`, `fastqc`, `bowtie2`, `samtools`,
   `deeptools`, `homer`, `bedtools`, `macs3`, `preseq`, `multiqc`,
   `phantompeakqualtools` providing `run_spp.R`, plus R packages).
   Tracked in `env/bio.yml`; see `env/README.md` for rebuild and
-  versioning instructions. Per-project `references.tsv` (auto-emitted by
-  `5_qc.sh`) records which env lock was active at run time.
+  versioning instructions (and for the other tracked envs: `rna` for
+  STAR RNA-seq, `sc` for single-cell, `meth`, `primer`, `pwm2*`, `vienna`).
+  Per-project `references.tsv` (auto-emitted by `5_qc.sh`) records which
+  env lock was active at run time. `0_config.sh` prepends the env's
+  `bin/` to `PATH`; nothing `conda activate`s.
 - Reference genome index (Bowtie2) and blacklist BED — paths in
   `0_config.sh`. Per-project `references.tsv` records which were used.
 - Projects expect data at `$HOME/work/seq/` (configurable in

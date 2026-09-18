@@ -19,6 +19,11 @@ filesystem tree, not a single repo). This doc describes how it's
 | Same script needed in 2+ projects | Promote to `scripts/pipeline/tools/`. See §5. |
 | New analysis spanning ≥2 projects | New repo under `seq/_joint/<name>/`. See §6. |
 | Add a wet-lab experiment derived from a project (qPCR panel, knockdown, validation) | New dir under `seq/.../P/experiments/<name>/`. Wet-lab work generates *new* data — keep it out of `analysis/` (which is in-silico re-analysis of the deposit). See §experiments. |
+| Add a bench experiment with **no** sequencing deposit behind it (qPCR, packaging, pull-down, construct design, nuclei prep) | Dated dir in the top-level `~/work/experiments/` repo: `<YYMMDD>_<slug>_v<N>/`. Sequencing it produces graduates to `seq/<assay>/`; the run dir stays the bench record (hub-and-spoke). See §experiments. |
+| Register a primer or plasmid for lab-wide reuse | Add a row to the TSVs in `~/work/reagents/` (toolkit in the `primer` env). Per-assay `primers.tsv` panels stay inside the experiment. |
+| Look at bigWigs in the UCSC browser | Hub dir `~/work/trackhub/<genome>_<subject>/`: symlinked inputs, hand-authored `hub/hub.txt`, allow-list upload. See §trackhub. |
+| Set up a bulk RNA-seq project | There is no `scripts/pipeline/rna/` yet. Reference implementation: the one `seq/rna/` project that carries a full `script/` (`ls seq/rna/*/script/2_star.sh`; Trim Galore → STAR → counts → tracks, `rna` env). The next RNA-seq project promotes those steps to `scripts/pipeline/rna/` and adds `rna` to `new_project.sh` before use (§5, §setup). |
+| Run a pipeline that may outlive the session | Detach it: `setsid nohup flock -n <lock> … &`, then poll the lock from a *separate* waiter. See §13. |
 | Start a multi-step in-silico analysis of a project | New dir under `seq/.../P/analysis/<topic>_v1/` with numbered Python steps. See §11. |
 | Materially change an analysis approach (feature set, model, label space) | Bump version: copy `<topic>_v1/` → `<topic>_v2/`, add `Supersedes:` line to v2's README and `Superseded by:` to v1's. See §11. |
 | Hand an artifact from one analysis to another | Pin the producer path in the consumer's `00_config.sh` via env var (e.g. `FOOTPRINT_TSV=...`). See §11. |
@@ -27,10 +32,10 @@ filesystem tree, not a single repo). This doc describes how it's
 | Snapshot a final MultiQC report | Copy `multiqc/multiqc_report.html` → `figures/multiqc_YYYY-MM-DD.html`, add manifest row. |
 | Track which env / refs were used | `scripts/env/lock/` for env snapshots; per-project `references.tsv` (auto-emitted) records which were active. |
 | Use PWM motif analysis outputs in a seq project | Add a `dependencies.tsv` row in the seq project. See §7. |
-| Upgrade the `bio` conda env | Re-export `bio.yml` and snapshot a new `lock/bio.<date>.yml`. See §8. |
+| Change any tracked conda env | Export-kind env (`bio`, `rna`, `primer`, `pwm2*`): re-export its yml; `vienna` with `conda env export --no-builds`. Spec-kind (`sc`, `meth`): hand-edit it — never export over it. Snapshot `lock/<env>.<date>.yml` before a major upgrade. See §8. |
 | Run an existing project's pipeline | `cd seq/.../<project>/script && ./run_all.sh`. Toggles via env (e.g. `RUN_TRIM=0 ./run_all.sh`). |
 | Make a change to a pipeline (`scripts/pipeline/<assay>/`) | Edit the source here. Per-project copies are stale by design until they're refreshed. |
-| Find what's uncommitted across all repos | `~/work/gitall.sh` (when adopted) or `find ~/work -name .git -prune` + manual `git status`. |
+| Find what's uncommitted across all repos | `scripts/setup/gitall.sh` — read-only, one line per repo up to two levels below `~/work`: clean/DIRTY + ahead/behind vs upstream. Its `find -maxdepth 3` does not reach `seq/<assay>/<project>/` repos yet; those still need their own `git status`. |
 
 ---
 
@@ -39,8 +44,8 @@ filesystem tree, not a single repo). This doc describes how it's
 ```
 ~/work/
 ├── scripts/                # GIT REPO (source-of-truth pipelines + tools)
-│   ├── env/                # conda env tracking (bio.yml, lock/bio.<date>.yml)
-│   ├── setup/              # new_project.sh scaffolder + PROVISION.md (2nd-node bootstrap)
+│   ├── env/                # conda env tracking: bio rna sc meth primer pwm2 pwm2-pb vienna (+ lock/<env>.<date>.yml) — §8
+│   ├── setup/              # new_project.sh scaffolder, gitall.sh, check_env_drift.sh, clone_all.sh, sync_brain.sh, bootstrap.md
 │   ├── CONVENTIONS.md      # this file
 │   ├── pipeline/
 │   │   ├── cnr/            # standard CUT&RUN: 0_config.sh + numbered steps
@@ -50,12 +55,18 @@ filesystem tree, not a single repo). This doc describes how it's
 │   │   ├── multiome/        # single-cell / multiome scaffold
 │   │   ├── templates/      # canonical scaffolding templates (gitignore, TSVs, README)
 │   │   └── tools/          # standalone utilities (heatmap.sh, peak_ops.sh,
-│   │                       # go_enrichr.py, annotation_pie.py, etc.)
+│   │       │               # go_enrichr.py, annotation_pie.py, etc.)
+│   │       ├── prep/       # FASTQ download / lane-merge / link_fastq helpers
+│   │       └── viz/        # _figure_style.py + _profile_plot.py — shared matplotlib style
+│   ├── maintenance/        # archive_inactive.sh (BAM→CRAM for `projects.tsv` rows with status=cleanup) + dedup/dupescan.py; inventory/audit TSVs are gitignored run outputs
+│   ├── docs/               # GitHub Pages tutorial source (Jekyll / Minima)
 │   ├── experimental/       # WIP — peak-caller comparisons etc.
 │   ├── legacy/             # older MACS2 single-file pipeline; reference only
 │   └── project_archive/    # one-off scripts from finished projects
 │
 ├── seq/<assay>/<project>/  # GIT REPO per active project
+│                           # assay ∈ cnr cnt chip csrna pro atac rna endseq lrrna methylome multiome scrna
+│                           # (endseq / lrrna / methylome re-analyse released tables: no numbered pipeline steps — see §setup)
 │   ├── README.md           # follows template (§4)
 │   ├── peakcall_groups.tsv # tracked: ip/control/name/type pairing
 │   ├── samples.tsv         # tracked: sample sheet (§4)
@@ -88,6 +99,14 @@ filesystem tree, not a single repo). This doc describes how it's
 │   ├── figures/manifest.md
 │   ├── data/, scratch/     # IGNORED
 │
+├── experiments/            # GIT REPO (PRIVATE) — bench experiments with no deposit behind them, one dated dir each (§experiments)
+│   ├── _lib/               # qpcr/ (design-agnostic qPCR machine), md2pdf.sh + print.{css,html}
+│   └── <YYMMDD>_<slug>_v<N>/
+├── reagents/               # GIT REPO (PRIVATE) — lab-wide primer + plasmid registries; TSV is the source of truth (`primer` env)
+├── trackhub/               # GIT REPO (PRIVATE) — UCSC hubs, one <genome>_<subject>/ each (§trackhub)
+├── work_brain/             # GIT REPO (PRIVATE) — plan/ (ROADMAP, DASHBOARD, NOW) + node-carry config; private remote only (sync_brain.sh), never to shared destinations
+├── tf_atlas/  IDR_analysis/  PWM_motif_analysis_v2/   # standalone repos (tf_atlas is the §5 graduation exemplar); `ls ~/work` for the current set
+├── lab_forms/              # NOT tracked (private): IGM submitter defaults read by pipeline/tools/igm_manifest.py
 ├── PWM motif analysis/     # EXISTING independent git repo (notebooks/PWM tooling)
 │
 ├── ref/                    # NOT tracked: genomes, blacklists, indexes (huge)
@@ -565,6 +584,15 @@ README documents what assays are involved.
 **When sources update:** bump SHAs in `sources.tsv`, decide whether to
 re-run analysis, commit. (No automation today; manual is fine for now.)
 
+**What the newest joints actually do (Jul–Sep 2026).** Analyses live under
+`analysis/<topic>_v<N>/` (§11 layout, numbered steps, `PREREG.md` where
+pre-registered) rather than in `script/local/`; `dependencies.tsv` pins tool
+repos; `inputs/` may be ignored with a README manifest instead of committed
+symlinks; `sources.tsv` is present only when `seq/` projects feed in (a joint
+over public external data alone has none); repo-level `PLAN.md`,
+`DEVIATIONS.md` and `BACKLOG.md` are common. Treat the 8 steps above as the
+minimum and the §11 layout as the shape for anything beyond a few scripts.
+
 ---
 
 ## §experiments — Wet-lab experiments derived from a project
@@ -609,6 +637,24 @@ deposit?" — yes → project-local; no → the top-level repo.
 
 First instance (project-local): a `seq/<assay>/<project>/experiments/<name>_v1/`
 qPCR validation panel derived from that project's `analysis/` finding.
+
+**Top-level repo layout (`~/work/experiments/`).** `experiments/README.md` is
+the index of every experiment and owns the file-level layout; the rules are
+here. Two shapes coexist, and one run may carry both. An *analysis experiment*
+(qPCR) commits its reports (`README.md`, `REPORT.md`, `QC_REPORT.md` /
+`VALIDATION_REPORT.md`), its `panel.tsv` / `primers.tsv`, numbered `script/`
+steps behind a `run_all.sh` (from the second qPCR experiment on; the first
+predates it) and `figures/`. A *bench record* (packaging, pull-down, nuclei
+prep, a validation run) commits `README.md` + `PROTOCOL.md` (rendered to PDF
+with `md2pdf.sh` since 2026-08-20), `samples.tsv` and `results/`. Raw
+instrument exports and regenerable intermediates are ignored — the list is
+`experiments/.gitignore`, one pattern per line (§3). Design-only experiments
+may add `plasmids/` (SnapGene maps) and `reviews/` (independent review notes).
+Shared code lives in `_lib/`: `qpcr/` must not know any experiment's arms,
+treatments or sample-name grammar; `md2pdf.sh` + `print.{css,html}` render
+Markdown to print-ready PDF (pandoc from `bio` → WeasyPrint from `mdpdf`). A
+collaborator's table never enters this repo, even though it is private — keep
+the authoritative copy in its own repo and ignore the file here.
 
 **One run, several readouts — hub and spokes.** A bench run often produces more
 than one readout, and they do not share a home: sequencing graduates to
@@ -672,6 +718,10 @@ upload without Steven's sign-off; the API key is his secret, kept in `$HOME`.
 own line per §3); `**/inputs/*` + `!**/inputs/README.md`; `upload_stage/`, `*.conf`.
 The `bin/` scripts are config-at-top with the hub dir as arg → graduate to
 `scripts/pipeline/tools/trackhub/` on the 2nd hub that reuses them (§5).
+The second hub (Jul 2026) added hub-local `bin/`
+(`make_universe_bb.py`), `derived/` (built bigBeds) and vendored
+`bedToBigBed` / `hubCheck` via `bin/fetch_ucsc_tools.sh`, so that trigger has
+fired: the shared `bin/` scripts are due to move.
 
 ---
 
@@ -693,23 +743,57 @@ into `scripts/pipeline/tools/` per §5. Commit message:
 
 ---
 
-## §8 — Conda env (`bio`)
+## §8 — Conda envs
 
-The `bio` env has every tool the pipelines invoke (bowtie2, MACS3, HOMER,
-deepTools, samtools, multiqc, R packages, …). Tracked in
-`scripts/env/`. Full instructions in `scripts/env/README.md`.
+The envs the shared pipelines and tools depend on are tracked in
+`scripts/env/`; the full rules (three yml kinds, rebuild routes, pip on glibc 2.23) are in
+`scripts/env/README.md`. `bio` is the workhorse for the bulk pipelines and
+`tools/`; the others each serve one line of work:
 
-**Quick reference:**
-- Current: `scripts/env/bio.yml`
-- Snapshots: `scripts/env/lock/bio.YYYY-MM-DD.yml`
-- Re-export after install/upgrade:
-  `conda env export -n bio > scripts/env/bio.yml`
-- Snapshot before major upgrade:
-  `cp scripts/env/bio.yml scripts/env/lock/bio.$(date +%F).yml`
-- Per-project pin: each project's `references.tsv` `bio_env_lock` row
-  records which lock was active during its pipeline run.
+| env | serves | yml kind |
+|---|---|---|
+| `bio` | cnr / csrna / pro / atac pipelines, HOMER, MACS3, deepTools, `tools/` | export |
+| `rna` | bulk RNA-seq (STAR, subread, trim-galore) — `seq/rna/` | export |
+| `sc` | scanpy / SnapATAC2 single-cell (§12); also the `experiments/` qPCR parse/QC/stats/figure steps (primer validation there runs in `primer`) | spec |
+| `meth` | snmC methylome (`seq/methylome/`) | spec |
+| `primer` | `reagents/` toolkit + primer design | export |
+| `pwm2`, `pwm2-pb` | PWM motif analysis | export |
+| `vienna` | ViennaRNA folding | export (`--no-builds`) |
 
-Locks are append-only. Never delete old ones.
+Analysis-local envs are not tracked here: `mdpdf` (WeasyPrint behind
+`experiments/_lib/md2pdf.sh`), `erenh_ml` / `ml` / `idr` (joint-analysis
+envs) and `footprint` have no yml anywhere; `idrlab` is tracked in
+`IDR_analysis/env/`. `ml` and `footprint` already have more than one consumer
+and are the first to add; track an env here (or in its owning repo) before a
+second place relies on it.
+
+**Spec vs export — tell them apart before touching the file.** An *export*
+(`conda env export`: every dependency pinned `name=version=build`) is
+re-exported after any install. A *spec* (hand-written, grouped, commented,
+loosely pinned) is hand-edited — **a `conda env export` over a spec destroys
+it.** Either way, snapshot `lock/<env>.YYYY-MM-DD.yml` (always a full export)
+before a major upgrade and commit both files together. Locks are append-only,
+never edited or re-dated: per-project `references.tsv` rows pin them (the
+cnr-family `5_qc.sh` records path + size + mtime with `-` in the sha256 column;
+the RNA-seq `5_qc.sh` records a real sha256), so re-dating or regenerating one
+breaks a committed reproducibility pin.
+`scripts/setup/check_env_drift.sh` flags an env whose `conda-meta/` is newer
+than its yml, plus pip packages missing from an export or unable to import.
+
+**linux01 is glibc 2.23.** Prefer `mamba install -c conda-forge`; pip only for
+pure-python packages, and import-test in a fresh process right after
+(`$HOME/miniforge3/envs/<env>/bin/python -c "import <pkg>"`). A wheel that
+installs but cannot import is not harmless — it can leave `ld.so` half-loaded
+and segfault unrelated calls minutes later. Never use
+`CONDA_OVERRIDE_GLIBC=2.28` to push a single package into an existing env (it
+silences only the solver; `ld.so` still enforces the symbol at runtime) —
+whole-env creates from a spec have needed it on this box (`sc`, `mdpdf`), so
+import-test every compiled package afterwards. Upgrade MultiQC through
+bioconda, never pip.
+
+**Pipelines never `conda activate`.** `0_config.sh` prepends the env's `bin/`
+to `PATH` (`CONDA_BIO_ENV` for the bulk pipelines, `CONDA_RNA_ENV` for
+RNA-seq); set the variable to `""` to skip, or point it at another env root.
 
 ---
 
@@ -775,6 +859,26 @@ Then supply the biology the scaffolder can't:
 4. `README.md` — fill "What this project is" + any remaining header TODOs.
 5. `cd script && ./link_fastq.sh && ./run_all.sh` — `references.tsv` auto-emits from `5_qc.sh`.
 6. Review (`git status`), commit, add remote (`gh repo create`), push.
+
+**Assays without a `scripts/pipeline/` dir.** `cnt` and `chip` reuse `cnr`
+(`--dest cnt`). Bulk RNA-seq has no pipeline dir yet: the reference
+implementation is the one `seq/rna/` project with a full `script/`
+(`ls seq/rna/*/script/2_star.sh`):
+`0_config.sh`, `1_trim_qc.sh`, `2_star.sh`, `3_counts.sh`, `4_track.sh`,
+`5_qc.sh` (`rna` env; `RUN_STAR` / `RUN_COUNTS` / `RUN_TRACK` toggles). The
+next project that needs the STAR steps promotes them to `scripts/pipeline/rna/`
+(§5) and adds `rna` to `new_project.sh`'s pipeline list in the same commit —
+do not hand-copy them a second time. `endseq`, `lrrna` and `methylome` projects
+re-analyse released tables. Build the tree by hand: README + `samples.tsv`
+from `scripts/pipeline/templates/`, hand-authored `references.tsv`,
+`sources.tsv` and `dependencies.tsv` (with an `<env>_env_lock` row), the
+`.gitignore` of the newest analysis-only project (no analysis-only template
+exists yet — the bulk one ignores what these projects track), the download /
+manifest / QC steps plus `00_config.sh` in `script/local/`, and the analyses
+under `analysis/` (§11). `seq/lrrna/` is the reference instance;
+`seq/methylome/` (Jun 2026) still lacks `references.tsv`, `sources.tsv` and
+`dependencies.tsv`; `endseq` predates the rule and keeps a root-level
+`get_data.sh` with no `script/`.
 
 ---
 
@@ -898,6 +1002,67 @@ vs `_v2/`) by setting `FOOTPRINT_TSV=...` at invocation, without
 rewriting paths inside the numbered steps. Pattern in use:
 `FOOTPRINT_TSV`, `SKIP_ACTIVE_TF_FILTER`, `PROJ_ROOT`.
 
+### Report and reproducibility hygiene
+
+Each rule below was added after it produced a wrong number in a shipped
+report. The first five are structural requirements of every analysis. The
+reference form, in use across `seq/` analyses since 2026-09:
+`processed/numbers_of_record.tsv` (key, value, source — value already the
+exact string the report shows), a `NN_report_gate.py` as the **last** step in
+`run_all.sh`, and `REPORT.md` markers `<!-- num:KEY -->VALUE<!-- /num -->`
+that the gate checks (exit 1 on any mismatch) and `--fill` rewrites while
+drafting. Pre-registered analyses fix hypotheses and endpoints in a
+`PREREG.md` before the run and log changes as numbered amendments; generator
+corrections go in `DEVIATIONS.md`.
+
+- **Every number in prose has a producer.** Emit a generated *numbers-of-record*
+  table — one row per quantity the report may cite, computed from `processed/` —
+  and a gate step, run **last** after every producer, that searches the prose
+  for each quantity's textual form and fails on disagreement (silence is fine;
+  disagreement is not). Hand-patching a report after a re-run is the operation
+  that causes drift, not the fix for it.
+- **A generated report with typed digits is worse than a hand-written one.** In
+  a generator, every number in a sentence, figure caption or axis annotation is
+  an f-string over the same variable the table used. A digit typed into a
+  generated file is the bug — nobody re-checks a file whose header says it
+  regenerates.
+- **Reuse gates on freshness, not existence.** `if [ -s "$out" ]` reuses a
+  stale derivative whenever its inputs were regenerated. Compare the output's
+  mtime against every input, or delete everything downstream of the step being
+  re-run. Consistency gates that only compare outputs to each other will pass.
+- **Variant runs suffix every write path.** When `NAME_SUFFIX=_x ./run_all.sh`
+  is supported, grep every writer *and* every reader for the suffix; suffixing
+  figures but not TSVs lets a variant silently overwrite the default results.
+  Default `NAME_SUFFIX=""` keeps historic paths intact.
+- **Figures are deterministic or they are not reproducible.** Pass `iter_lim` to
+  adjustText (its default is a wall-clock budget, so label positions depend on
+  machine load); sort sets before iterating; seed sampling on item identity
+  (e.g. an md5 of the row key), not on row index. Check by re-running several
+  times under load and diffing checksums.
+
+### Analysis pitfalls (each learned once)
+
+- **Join on the identity key.** Per-site values join on (transcript, position)
+  or (chrom, pos, strand) — never on gene or transcript name, which is a
+  grouping; `drop_duplicates` on it picks a silent winner for every site.
+- **Synthetic controls own their identity.** A shuffled or simulated control
+  stored under its source row's key is rebuilt as a copy of the source by any
+  step that regenerates from the key — and then looks like a clean null. Give it
+  its own key and check, at least once, that it differs from its source on
+  the analysed statistic before using it.
+- **Do not condition controls on an outcome.** Compute criterion rates over the
+  whole set (`% of all windows meeting A and B`); subsetting cases and controls
+  to a property that differs between them keeps only the atypical controls and
+  can flip a sign.
+- **Match the test to the data's shape.** Signed-rank on ranks of a mostly-zero
+  metric is zero-bounded and right-skewed and rejects far above nominal; build
+  the exact exchangeability null instead (pool item + controls, leave-one-out
+  ranks, draw uniformly).
+- **Enumerate a vocabulary before writing tier tests over it.**
+  `grep -o 'tag "[^"]*"' file.gtf | sort | uniq -c` first; match tag families by
+  prefix (`startswith`), not exact membership, and expect the vocabulary to
+  change between annotation releases.
+
 ---
 
 ## §12 — Single-cell / multiome conventions
@@ -909,8 +1074,9 @@ to stay stable on NFS.
 ### Env
 
 Use the **`sc`** env, not `bio`. `sc` has scanpy, anndata, SnapATAC2,
-scrublet, scvi-tools, pyDESeq2, harmonypy; `bio` does not. Snapshots in
-`scripts/env/lock/sc.<date>.yml` (same convention as `bio`; §8).
+scrublet, scvi-tools, pyDESeq2, harmonypy; `bio` does not. `sc.yml` is a hand-edited
+spec (§8): never `conda env export` over it; snapshots go in
+`scripts/env/lock/sc.<date>.yml`.
 
 ### h5ad / NFS rules
 
@@ -965,10 +1131,33 @@ BLAS thread caps set after `import numpy` are no-ops. Two rules:
 
 ---
 
-## §13 — System compute cap
+## §13 — System compute cap and long-running jobs
 
 linux01 has **16 CPU cores**. Cap *total* concurrent CPU usage across all
 parallel jobs (pyDESeq2 `n_cpus`, joblib `n_jobs`, BLAS thread pools,
 parallel chains, subagents doing heavy work) at 16. Monitor with
 `uptime`; kill stale long-running jobs proactively when load goes above
 nominal.
+
+**Detach anything that may outlive the session.** Harness-tracked background
+tasks die with the session that started them (a pipeline was killed mid-step this
+way on 2026-09-12). For long runs:
+
+```bash
+cd seq/<assay>/<project>/script            # logs/ lives at the project root
+LOCK=../logs/run_all.lock                  # partial run: insert RUN_*=… after env
+setsid nohup flock -n "$LOCK" env bash ./run_all.sh \
+  > ../logs/run_all.nohup 2>&1 < /dev/null &
+flock -n "$LOCK" true || echo "job is up"      # lock held ⇒ running
+```
+
+Poll the lock from a *separate* waiter (`until flock -n "$LOCK" true; do sleep
+60; done`) purely for the completion notice; the waiter may die with the
+session, the job will not. The lock also blocks a duplicate launch from another
+session. On resume, check outputs before trusting them — `samtools quickcheck`,
+index newer than BAM, the aligner log's final summary line present — and delete
+any partial bigWig: the cnr steps skip outputs that merely exist (see §11
+"Reuse gates on freshness").
+
+Node-specific shell gotchas (the grep implementation, symlink redirects) live
+in the node's `CLAUDE.md`, not here.

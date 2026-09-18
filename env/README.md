@@ -3,8 +3,11 @@
 This directory tracks the conda environments the workspace depends on, so old
 projects stay reproducible after upgrades. `bio` is the workhorse for the bulk
 pipelines (cutrun, csRNA, proseq, atac) and the shared tools; `sc`, `meth`,
-`rna`, `primer`, `pwm2` and `pwm2-pb` serve single-cell, methylome, RNA-seq,
-primer-design and PWM work respectively.
+`rna`, `primer`, `pwm2` / `pwm2-pb` and `vienna` serve single-cell, methylome,
+RNA-seq, primer-design, PWM and RNA-folding work respectively. Analysis-local
+envs that exist on linux01 without a yml here (`mdpdf`, `erenh_ml`, `ml`,
+`idr`, `footprint`) are listed in CONVENTIONS §8; `idrlab` is tracked in
+`IDR_analysis/env/`.
 
 ## Files — three kinds, updated differently
 
@@ -19,14 +22,18 @@ usually ends with a `prefix:` line; a spec pins almost nothing. (Don't rely on
   package plus a one-line comment saying what needs it. `meth.yml`, for example,
   carries the reasoning for pinning `setuptools<81` and for replacing
   `ucsc-liftover` with `CrossMap` on glibc 2.23 — an export would erase it.
-- **Export** — `bio.yml`, `rna.yml`, `primer.yml`, `pwm2.yml`, `pwm2-pb.yml`.
+- **Export** — `bio.yml`, `rna.yml`, `primer.yml`, `pwm2.yml`, `pwm2-pb.yml`,
+  and `vienna.yml` (a `conda env export --no-builds` export: versions pinned,
+  no build strings — re-export it the same way).
   `conda env export` output: every dependency pinned `name=version=build`, and
   usually a trailing `prefix:` line (`pwm2.yml` has had its stripped, so the
   pinning is the reliable marker). Re-export after any install.
 - **Lock** — `lock/<env>.YYYY-MM-DD.yml`. Always a full export, for *both* kinds
   above. The lock is where exactness lives, which is why a spec is free to stay
   loose. Append-only, never edited or re-dated: per-project `references.tsv`
-  rows pin these **by sha256**, so regenerating one breaks a committed
+  rows pin these (the cnr-family `5_qc.sh` records path + size + mtime with `-`
+  in the sha256 column; the RNA-seq `5_qc.sh` records a real sha256), so
+  re-dating or regenerating one breaks a committed
   reproducibility pin.
 
 ## Rebuild commands
@@ -48,7 +55,8 @@ conda env create -n bio_old -f lock/bio.2026-04-28.yml
 
 ## When to update
 
-- **An export** (`bio`, `rna`, `primer`, `pwm2`, `pwm2-pb`) — re-export every
+- **An export** (`bio`, `rna`, `primer`, `pwm2`, `pwm2-pb`; `vienna` with
+  `--no-builds`) — re-export every
   time you `conda install` / `conda update` / `pip install` into it:
   ```
   conda env export -n bio > scripts/env/bio.yml
