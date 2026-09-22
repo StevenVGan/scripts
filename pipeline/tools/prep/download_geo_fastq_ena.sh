@@ -87,7 +87,7 @@ else
   pids=()
   while IFS=$'\t' read -r srr url md5; do
     [[ -z "${srr:-}" ]] && continue
-    while (( $(jobs -r | wc -l) >= DOWNLOAD_JOBS )); do
+    while (( $(jobs -rp | wc -l) >= DOWNLOAD_JOBS )); do   # -p: one PID per line (jobs -r prints multi-line command text -> overcounts)
       sleep 0.3
     done
     out="${FQ_DIR}/${srr}.fastq.gz"
