@@ -13,7 +13,7 @@ set -euo pipefail
 
 ############################ CONFIG SECTION ###################################
 
-BASE="${HOME}/work/seq/CUTRUN/260115_CnR_ERa_OGG1_MCF7_KD_Priyanka"
+BASE="${HOME}/work/seq/cnr/<project>"
 GENOME="hg38"
 ANNOT_BED="${BASE}/ref/hg38_tss_regions.bed"
 

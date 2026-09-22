@@ -11,7 +11,7 @@
 #   CHAIN   optional; default: script dir / ${FROM}To${TO}.over.chain
 #
 # Examples:
-#   ./lift_bed.sh ./MCF7_Amir_hg19 hg19 hg38 ./MCF7_Amir_hg38
+#   ./lift_bed.sh ./MCF7_peaks_hg19 hg19 hg38 ./MCF7_peaks_hg38
 #   ./lift_bed.sh my.bed hg19 hg38 ./out
 #
 # Chain (once): wget then gunzip from

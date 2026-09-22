@@ -16,7 +16,7 @@ FTP_PASSWORD="${FTP_PASSWORD:-}"
 
 # Destination: raw_seq for downloaded data, or project-specific
 DEST_DIR="${DEST_DIR:-$HOME/work/raw_seq/260401_LH00444_0498_B235NNMLT4}"
-# Priyanka / IGM CnR: FASTQs are named PS###_... ; other runs often use SG###
+# Some IGM CnR runs name FASTQs PS###_... ; other runs often use SG###
 FILE_PREFIX="${FILE_PREFIX:-PS}"
 # ==============================================================================
 

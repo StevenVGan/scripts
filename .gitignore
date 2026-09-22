@@ -17,3 +17,7 @@ maintenance/audit.tsv
 
 # VS Code Local History — edit snapshots must never reach this PUBLIC repo
 .history/
+
+# maintenance/projects.tsv: the live project registry names lab project dirs (owner names in the
+# dir names) — keep it local; commit only projects.tsv.example
+maintenance/projects.tsv

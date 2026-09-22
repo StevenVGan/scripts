@@ -1,0 +1,4 @@
+status	path	notes
+active	seq/cnr/CnR_<date>_<target>_<cell>_<owner>	<why it is active / what consumes it>
+keep	seq/chip/ChIP_<accession>_<target>_<cell>	<public re-analysis kept intact>
+cleanup	seq/cnr/CnR_<date>_<target>_<cell>_<owner>	<BAM->CRAM + delete regenerables>

@@ -52,7 +52,7 @@ Override: `BASE=/path/to/project ./run_all.sh`
 
 ## `peakcall_groups.tsv`
 
-Same four-column tab format as CUT&RUN (see `seq/CUTRUN/260401_CnR_ERa_OGG1_MCF7_Priyanka/peakcall_groups.tsv`). Place at `${BASE}/peakcall_groups.tsv`. The combined HepG2 project ships an example at its root.
+Same four-column tab format as CUT&RUN (see `seq/cnr/<project>/peakcall_groups.tsv`). Place at `${BASE}/peakcall_groups.tsv`. The combined HepG2 project ships an example at its root.
 
 ## Running under `screen`
 

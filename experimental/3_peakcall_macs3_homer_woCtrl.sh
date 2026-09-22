@@ -24,7 +24,7 @@ shopt -s nullglob
 
 ############################ CONFIG ###########################################
 
-BASE="${HOME}/work/seq/CUTRUN/260115_CnR_ERa_OGG1_MCF7_KD_Priyanka"
+BASE="${HOME}/work/seq/cnr/<project>"
 
 BAM_DIR="${BASE}/align/bam"
 TAG_DIR_EXISTING="${BASE}/align/tags"

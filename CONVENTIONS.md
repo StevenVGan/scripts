@@ -282,8 +282,8 @@ terse `prefix→newname` map that `link_fastq` actually consumes.
 
 ```
 sample_id            target    condition    replicate    raw_fastq_R1                          raw_fastq_R2                          sequencing_run    notes
-MCF7_ERa_DMSO_rep1   ERa       DMSO         1            raw_seq/260401_IGM/SG13_S1_R1.fq.gz   raw_seq/260401_IGM/SG13_S1_R2.fq.gz   260401_IGM        Priyanka submission
-MCF7_ERa_E2_rep1     ERa       E2_1h        1            raw_seq/260401_IGM/SG14_S2_R1.fq.gz   raw_seq/260401_IGM/SG14_S2_R2.fq.gz   260401_IGM        Priyanka submission
+MCF7_ERa_DMSO_rep1   ERa       DMSO         1            raw_seq/260401_IGM/SG13_S1_R1.fq.gz   raw_seq/260401_IGM/SG13_S1_R2.fq.gz   260401_IGM        <owner> submission
+MCF7_ERa_E2_rep1     ERa       E2_1h        1            raw_seq/260401_IGM/SG14_S2_R1.fq.gz   raw_seq/260401_IGM/SG14_S2_R2.fq.gz   260401_IGM        <owner> submission
 ```
 
 Use `-` for `raw_fastq_R2` on single-end and for any column that doesn't
@@ -339,8 +339,8 @@ is created; refresh SHAs when you re-pull from a source.
 
 ```
 name              path                                              git_sha   role
-ERa_OGG1_KD       ../../cnr/CnR_260115_ERa_MCF7_OGG1-KD_Priyanka    abc1234   knockdown
-ERa_OGG1_nonKD    ../../cnr/CnR_260401_ERa_MCF7_OGG1-inhi_Priyanka  def5678   control
+ERa_OGG1_KD       ../../cnr/CnR_260115_ERa_MCF7_OGG1-KD_<owner>    abc1234   knockdown
+ERa_OGG1_nonKD    ../../cnr/CnR_260401_ERa_MCF7_OGG1-inhi_<owner>  def5678   control
 ```
 
 ### `dependencies.tsv` (cross-project / external-artifact ledger, tracked)
@@ -693,7 +693,7 @@ name leading with the genome so `ls` clusters by assembly; project/thrust is a
 ├── README.md  REGISTRY.tsv         # runbook; multi-axis index of every hub
 ├── bin/{build_hub.sh,upload_hub.sh,hubtools}   # shared machinery (hubtools vendored, pure-python)
 ├── ref/<genome>.chrom.sizes
-└── <genome>_<subject>/             # a hub, e.g. mm10_mCort_H2O2/
+└── <genome>_<subject>/             # a hub, e.g. hg38_<subject>/
     ├── README.md  sources.tsv  tracks.tsv        # provenance + source->TRUE-label build map
     ├── hub/hub.txt                 # tracked (KB): single useOneFile composite hub
     ├── inputs/                     # symlinks to source bigWigs (gitignored; never copied)

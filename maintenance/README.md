@@ -1,5 +1,9 @@
 # scripts/maintenance — inactive-project archival
 
+> The live registry `projects.tsv` is **gitignored** (it lists lab project directories, whose
+> names carry the owner). Create it from `projects.tsv.example`; `archive_inactive.sh` reads
+> `$PROJECTS_TSV` (default `maintenance/projects.tsv`).
+
 One-time (and re-runnable) cleanup that recovers disk space from sequencing
 projects that aren't being actively analyzed, without losing anything that
 can't be regenerated from `~/work/raw_seq/` and the pipeline.
@@ -58,10 +62,10 @@ cd ~/work/scripts/maintenance
 # per-project bytes and detected genome.
 ./archive_inactive.sh inventory
 
-# Phase 2 — smoke test on one mid-size project. Suggested target:
-#   seq/cnr/CnR_251204_CTCF_HEK_Priyanka  (~19G, hg38, modern align/bam/ layout)
+# Phase 2 — smoke test on one mid-size project: pick one of ~20 GB with the
+#   modern align/bam/ layout (hg38)
 # Then sanity-check log under logs/, and verify CRAM round-trips back to BAM:
-./archive_inactive.sh run seq/cnr/CnR_251204_CTCF_HEK_Priyanka
+./archive_inactive.sh run seq/cnr/<project>
 
 # Phase 3 — full batch. Loops through every cleanup row in projects.tsv.
 ./archive_inactive.sh run

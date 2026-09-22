@@ -34,7 +34,7 @@ RUN_ALIGNMENT=1
 RUN_MACS3=1
 
 # Project base directory
-BASE="${HOME}/work/seq/CUTRUN/260115_CnR_ERa_OGG1_MCF7_KD_Priyanka"
+BASE="${HOME}/work/seq/cnr/<project>"
 
 # Directories (relative to BASE)
 RAW_DIR="${BASE}/data"           # symlinked + renamed FASTQs

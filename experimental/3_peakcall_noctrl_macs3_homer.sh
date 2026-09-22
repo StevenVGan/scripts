@@ -16,7 +16,7 @@ shopt -s nullglob
 ############################ CONFIG ###########################################
 
 # Project base directory (match your pipeline BASE)
-BASE="${HOME}/work/seq/CUTRUN/260115_CnR_ERa_OGG1_MCF7_KD_Priyanka"
+BASE="${HOME}/work/seq/cnr/<project>"
 
 # Input BAMs and existing HOMER tagdirs (from upstream pipeline)
 BAM_DIR="${BASE}/align/bam"

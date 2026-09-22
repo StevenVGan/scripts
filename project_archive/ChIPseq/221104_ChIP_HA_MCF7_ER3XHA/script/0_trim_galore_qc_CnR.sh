@@ -6,7 +6,7 @@
 
 # Set parameters and directories
 HOME="/mnt/home/digan"
-BASE="${HOME}/seq/ChIPseq/221104_ChIP_HA_MCF7_ER3XHA_Likun"
+BASE="${HOME}/seq/ChIPseq/221104_ChIP_HA_MCF7_ER3XHA"
 TRIM_GALORE="/opt/apps/bio/TrimGalore-0.6.10/trim_galore"
 CUTADAPT="/opt/apps/bio/cutadapt-4.1/bin/cutadapt"
 FASTQC="/opt/apps/bio/fastqc-0.11.9/fastqc"

@@ -7,7 +7,7 @@ Archived scripts from past sequencing projects, organized by assay type.
 | Folder | Assay | Contents |
 |--------|-------|----------|
 | **ATACseq/** | ATAC-seq | snATAC HepG2 (ENCODE Snyder) |
-| **ChIPseq/** | ChIP-seq | ENCODE/GEO Bernstein, Myers, Snyder; lab projects (Likun, Yuliang) |
+| **ChIPseq/** | ChIP-seq | ENCODE/GEO Bernstein, Myers, Snyder; lab projects |
 | **CUTRUN/** | CUT&RUN | Lab CUT&RUN projects (Steven, etc.) |
 | **PROseq/** | PRO-seq | PRO-seq and scRNA projects |
 

@@ -6,7 +6,7 @@
 
 # Set parameters and directories
 HOME="/mnt/home/digan"
-BASE="${HOME}/seq/ChIPseq/221104_ChIP_HA_MCF7_ER3XHA_Likun"
+BASE="${HOME}/seq/ChIPseq/221104_ChIP_HA_MCF7_ER3XHA"
 INPUT_DIR="${BASE}/cleandata"
 OUTPUT_DIR="${BASE}/align"
 BOWTIE2="/mnt/share/apps/bio/bowtie2-2.4.5/bowtie2"

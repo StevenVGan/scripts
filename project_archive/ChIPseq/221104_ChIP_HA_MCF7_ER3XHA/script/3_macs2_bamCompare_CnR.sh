@@ -6,7 +6,7 @@
 
 # Set directories
 HOME="/mnt/home/digan"
-BASE="${HOME}/seq/ChIPseq/221104_ChIP_HA_MCF7_ER3XHA_Likun"
+BASE="${HOME}/seq/ChIPseq/221104_ChIP_HA_MCF7_ER3XHA"
 INPUT_DIR="${BASE}/align"
 OUTPUT_DIR="${BASE}/peaks"
 OUTPUT_DIR2="${BASE}/align/track"

@@ -1,14 +1,14 @@
 #!/bin/sh
 # shellcheck disable=all
 
-# based on mix of Yulian Tang and Soohan scripts
+# based on a mix of two earlier lab ChIP-seq scripts
 # the FILE var will have the full name of x.fastq.gz to remove it , uses ${FILE/.fastq.gz/} or to replace with .sam ${FILE/.fastq.gz/.sam}
-# ChIP seq of CTCF active motive from BC mice CTX nuclei and HC 9/13/17
+# ChIP-seq template (first version 9/13/17)
 # added multiqc to last step...make changes to actual directories used.
 # 12/5/19 add newer Fastqc version fastqc-0.11.8 that can handle Nova-seq better
 # 11/10/21 add $HOMERVER, define $BASE, $FASTQCVER, $BOWTIEVER
 
-BASE=~/work/ChIP/LY_MCF7_ChIP_ERdeIDR_SD_CBP_GATA3_211104
+BASE="$HOME/work/ChIP/<project>"
 MULTIQCIN=${BASE}
 MULTIQCOUT=${BASE}/analysis
 
@@ -88,7 +88,7 @@ echo    ______step6: annotation of peaks are completed ______
 #     nice /opt/apps/bio/homer-4.8.2/bin/findMotifsGenome.pl ${FILE/.fastq.gz/}/peaks.txt mm8 ${FILE/.fastq.gz/.MotifOutput/} -p 12 -size 200 -len 8,9,10,11,12,13,14,15 -S 200
 #echo    ______step7: motifs finding completed ______ 
 
-		nice $HOMERVER/makeBigWig.pl ${fbase} ${GENOME} -normal -force -webdir /mnt/share/archive/res/users/agamliel/ucsc/ -url  http://rosenfeldlab.ucsd.edu/res/agamliel/ucsc/
+		nice $HOMERVER/makeBigWig.pl ${fbase} ${GENOME} -normal -force -webdir "<webdir>/" -url "<url>"
 
 echo    ______step8: makeBigWig completed ______ 
 # rm -rf ${FILE}

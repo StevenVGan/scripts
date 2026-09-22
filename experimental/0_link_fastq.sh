@@ -3,8 +3,8 @@ set -euo pipefail
 
 # ==== CONFIG (adjust for each run) ============================================
 RAW_DIR="$HOME/work/raw_seq/260115_LH00444_0462_A233NNNLT3"
-DEST_DIR="$HOME/work/seq/CUTRUN/260115_CnR_ERa_OGG1_MCF7_KD_Priyanka/data"
-MAP_FILE="$HOME/work/seq/CUTRUN/260115_CnR_ERa_OGG1_MCF7_KD_Priyanka/link_sample.tsv"
+DEST_DIR="$HOME/work/seq/cnr/<project>/data"
+MAP_FILE="$HOME/work/seq/cnr/<project>/link_sample.tsv"
 # ==============================================================================
 
 mkdir -p "$DEST_DIR"
