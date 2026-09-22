@@ -1,0 +1,19 @@
+# Scan roots for dupescan.py. Copy to roots.tsv and edit for this host.
+#
+#   label   path   enabled(1/0)   free-text note
+#
+# Do NOT list the same NFS export twice under different mount points --
+# dupescan refuses to run if you do, but check first with:
+#   awk '$3==1{print $2}' roots.tsv | while read p; do \
+#     printf '%s\t%s\n' "$(stat -c %i "$p")" "$p"; done | sort
+# Equal inodes = same export = list only one of them.
+#
+# One line per distinct filesystem you want compared. Enable a few at a time;
+# a cold metadata walk runs at roughly 2k files/s per NFS export.
+
+archive     /mnt/share/archive   1   shared archive volume
+apps        /mnt/share/apps      1   shared apps volume
+offsite     /mnt/bkup            1   offsite mirror
+home_me     /mnt/home/USERNAME   1   own home
+home_other  /mnt/home/OTHERUSER  0   other users' homes -- enable only with consent
+dead_vol    /mnt/share/dead      0   unreadable volume; leave disabled
