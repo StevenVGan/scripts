@@ -30,3 +30,10 @@ maintenance/dedup/.current_verify_log
 # maintenance/projects.tsv: the live project registry names lab project dirs (owner names in the
 # dir names) — keep it local; commit only projects.tsv.example
 maintenance/projects.tsv
+
+# Globus Connect Personal / globus-cli state and key files — defensive: they live under $HOME and must never
+# reach this PUBLIC repo even if a dot-dir is ever copied in
+.globusonline/
+.globus/
+*.pem
+*.key
