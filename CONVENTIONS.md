@@ -32,7 +32,7 @@ filesystem tree, not a single repo). This doc describes how it's
 | Snapshot a final MultiQC report | Copy `multiqc/multiqc_report.html` → `figures/multiqc_YYYY-MM-DD.html`, add manifest row. |
 | Track which env / refs were used | `scripts/env/lock/` for env snapshots; per-project `references.tsv` (auto-emitted) records which were active. |
 | Use PWM motif analysis outputs in a seq project | Add a `dependencies.tsv` row in the seq project. See §7. |
-| Change any tracked conda env | Export-kind env (`bio`, `rna`, `primer`, `pwm2*`): re-export its yml; `vienna` with `conda env export --no-builds`. Spec-kind (`sc`, `meth`): hand-edit it — never export over it. Snapshot `lock/<env>.<date>.yml` before a major upgrade. See §8. |
+| Change any tracked conda env | Export-kind env (`bio`, `rna`, `primer`, `pwm2*`): re-export its yml; `vienna` and `globus` with `conda env export --no-builds` (drop the `prefix:` line). Spec-kind (`sc`, `meth`): hand-edit it — never export over it. Snapshot `lock/<env>.<date>.yml` before a major upgrade. See §8. |
 | Run an existing project's pipeline | `cd seq/.../<project>/script && ./run_all.sh`. Toggles via env (e.g. `RUN_TRIM=0 ./run_all.sh`). |
 | Make a change to a pipeline (`scripts/pipeline/<assay>/`) | Edit the source here. Per-project copies are stale by design until they're refreshed. |
 | Find what's uncommitted across all repos | `scripts/setup/gitall.sh` — read-only, one line per repo up to two levels below `~/work`: clean/DIRTY + ahead/behind vs upstream. Its `find -maxdepth 3` does not reach `seq/<assay>/<project>/` repos yet; those still need their own `git status`. |
@@ -44,7 +44,7 @@ filesystem tree, not a single repo). This doc describes how it's
 ```
 ~/work/
 ├── scripts/                # GIT REPO (source-of-truth pipelines + tools)
-│   ├── env/                # conda env tracking: bio rna sc meth primer pwm2 pwm2-pb vienna (+ lock/<env>.<date>.yml) — §8
+│   ├── env/                # conda env tracking: bio rna sc meth primer pwm2 pwm2-pb vienna globus (+ lock/<env>.<date>.yml) — §8
 │   ├── setup/              # new_project.sh scaffolder, gitall.sh, check_env_drift.sh, clone_all.sh, sync_brain.sh, bootstrap.md
 │   ├── CONVENTIONS.md      # this file
 │   ├── pipeline/
@@ -56,7 +56,7 @@ filesystem tree, not a single repo). This doc describes how it's
 │   │   ├── templates/      # canonical scaffolding templates (gitignore, TSVs, README)
 │   │   └── tools/          # standalone utilities (heatmap.sh, peak_ops.sh,
 │   │       │               # go_enrichr.py, annotation_pie.py, etc.)
-│   │       ├── prep/       # FASTQ download / lane-merge / link_fastq helpers
+│   │       ├── prep/       # FASTQ download (IGM via Globus; legacy FTP; ENA) / lane-merge / link_fastq helpers
 │   │       └── viz/        # _figure_style.py + _profile_plot.py — shared matplotlib style
 │   ├── maintenance/        # archive_inactive.sh (BAM→CRAM for `projects.tsv` rows with status=cleanup) + dedup/dupescan.py; inventory/audit TSVs are gitignored run outputs
 │   ├── docs/               # GitHub Pages tutorial source (Jekyll / Minima)
@@ -759,6 +759,7 @@ The envs the shared pipelines and tools depend on are tracked in
 | `primer` | `reagents/` toolkit + primer design | export |
 | `pwm2`, `pwm2-pb` | PWM motif analysis | export |
 | `vienna` | ViennaRNA folding | export (`--no-builds`) |
+| `globus` | globus-cli behind `tools/prep/download_igm_fastq_globus.sh` (IGM deliveries) | export (`--no-builds`) |
 
 Analysis-local envs are not tracked here: `mdpdf` (WeasyPrint behind
 `experiments/_lib/md2pdf.sh`), `erenh_ml` / `ml` / `idr` (joint-analysis
@@ -793,7 +794,7 @@ bioconda, never pip.
 
 **Pipelines never `conda activate`.** `0_config.sh` prepends the env's `bin/`
 to `PATH` (`CONDA_BIO_ENV` for the bulk pipelines, `CONDA_RNA_ENV` for
-RNA-seq); set the variable to `""` to skip, or point it at another env root.
+RNA-seq; `tools/prep/download_igm_fastq_globus.sh` does the same with `CONDA_GLOBUS_ENV`); set the variable to `""` to skip, or point it at another env root.
 
 ---
 

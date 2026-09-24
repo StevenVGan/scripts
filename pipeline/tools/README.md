@@ -6,7 +6,7 @@ Reusable utilities for sequencing analysis. **Bash** helpers (`*.sh`) usually us
 
 ## Prep (upstream FASTQs)
 
-**[prep/](prep/)** — IGM **`download_fastq`**, ENA **`download_geo_fastq_ena`**, Illumina **`link_fastq`**, **`merge_lanes_inplace`**, **`link_merged_fastqs`**. See **[prep/README.md](prep/README.md)**.
+**[prep/](prep/)** — IGM via Globus **`download_igm_fastq_globus`** (+ **`start_gcp`**; **`download_fastq`** = legacy FTP), ENA **`download_geo_fastq_ena`**, Illumina **`link_fastq`**, **`merge_lanes_inplace`**, **`link_merged_fastqs`**. See **[prep/README.md](prep/README.md)**.
 
 ## Topic subfolders
 
@@ -165,7 +165,7 @@ exec bash ~/work/scripts/pipeline/tools/prep/link_fastq.sh
 
 **Multi-lane IGM → merged names → `data/`:** see [prep/README.md](prep/README.md) (`merge_lanes_inplace.sh`, `link_merged_fastqs.sh`).
 
-**ENA / GEO-style SRR downloads** (`prep/download_geo_fastq_ena.sh`; campus IGM FTP is **`prep/download_fastq.sh`**)
+**ENA / GEO-style SRR downloads** (`prep/download_geo_fastq_ena.sh`; campus IGM runs come through Globus: **`prep/download_igm_fastq_globus.sh`**, legacy FTP **`prep/download_fastq.sh`**)
 ```bash
 cd prep
 # Edit DEST_DIR, SRR_LIST_FILE in download_geo_fastq_ena.sh (replace MY_GEO_RUN), or:
@@ -185,7 +185,7 @@ Requires: `curl`, `md5sum`. Writes `*.part.*` then renames to `SRR....fastq.gz`.
   `seq/_joint/MCF7_ER_p65_cobinding/` (the joint repo is the single source
   of truth for cobinding scripts). Generic **go_enrichr.py** /
   **annotation_pie.py** above are independent — use them directly.
-- **prep/** (**download_fastq**, **download_geo_fastq_ena**, **link_fastq**, **merge_lanes_inplace**, **link_merged_fastqs**) and **subsample_data**: set paths via script config or env; project wrappers should `exec` scripts under **`tools/prep/`** where appropriate.
+- **prep/** (**download_igm_fastq_globus**, **start_gcp**, **download_fastq** (legacy FTP), **download_geo_fastq_ena**, **link_fastq**, **merge_lanes_inplace**, **link_merged_fastqs**) and **subsample_data**: set paths via script config or env; project wrappers should `exec` scripts under **`tools/prep/`** where appropriate.
 - **peak_ops `--viz`**: Venn diagrams use the same **mutually exclusive peak partitions** as the UpSet right-bar counts ([peak_vennDiagram.R](peak_vennDiagram.R)); not supported for more than four sets (use UpSet).
 - **UpSet (5+ sets):** [peaks_ops_upsetR.R](peaks_ops_upsetR.R) omits per-bar colored **queries** when **n > 4** to avoid an UpSetR bug; counts and default UpSet bars are unchanged.
 - **subsample_data**: Uses `../cnr/0_config.sh` when run from `pipeline/tools/`, or set `CONFIG_FILE=/path/to/project/script/0_config.sh` for your project.

@@ -13,7 +13,7 @@ the private `work_brain/PROVISION.md` (fuller rationale + Phase 2 references + �
    gh auth setup-git            # points git's credential helper at the new gh
    gh config set git_protocol https
    git config --global user.name 'Steven Gan'
-   git config --global user.email digan@ucsd.edu
+   git config --global user.email you@example.edu       # your institutional address
    ```
 
 ## 2. Clone the spine
@@ -31,6 +31,11 @@ mamba env create -f $HOME/work/scripts/env/sc.yml
 Fresh solve, NOT conda-pack. On a newer-glibc box you should NOT need
 `CONDA_OVERRIDE_GLIBC`. If a full-pin solve fails, retry with `--no-builds`, then
 re-freeze. Watch `ucsc-liftover` / `bismark` (historic zlib pin conflicts).
+
+## 3b. IGM deliveries via Globus (optional, if this node will pull sequencing runs)
+`mamba env create -f $HOME/work/scripts/env/globus.yml`, then the one-time steps in
+`pipeline/tools/prep/README.md` → "IGM via Globus" (login, Globus Connect Personal under `$HOME`,
+endpoint registration, `start_gcp.sh`). Each node is its own endpoint; nothing is shared between nodes.
 
 ## 4. Drop in the carry-bundle (durable Claude brain + config)
 ```bash
@@ -61,5 +66,7 @@ copy the former-NAS bowtie2 indexes + FASTAs under `$HOME/work/ref` and set `REF
 
 ## Ongoing
 - Pull convention/tool updates: `git -C scripts pull`.
+- Before pushing `scripts/` (PUBLIC): `scripts/setup/audit_public_tree.sh`; optionally
+  `ln -s ../../setup/audit_public_tree.sh scripts/.git/hooks/pre-commit` (hooks are per clone).
 - Pull durable memory updates: `scripts/setup/sync_brain.sh pull`.
 - See work_brain/PROVISION.md §5 for the two-node sync discipline.

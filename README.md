@@ -17,7 +17,7 @@ README and per-project READMEs assume CONVENTIONS.md.
 ```
 scripts/
 ├── CONVENTIONS.md         # source of truth for ~/work/ layout (read first)
-├── env/                   # conda env tracking: bio rna sc meth primer pwm2 pwm2-pb vienna + dated lock/ — see env/README.md
+├── env/                   # conda env tracking: bio rna sc meth primer pwm2 pwm2-pb vienna globus + dated lock/ — see env/README.md
 ├── setup/                 # new_project.sh scaffolder, gitall.sh, check_env_drift.sh, clone_all.sh, sync_brain.sh, bootstrap.md
 ├── maintenance/           # archive_inactive.sh (BAM→CRAM for inactive projects), dedup/dupescan.py
 ├── pipeline/              # All standard pipelines + shared tools
@@ -54,10 +54,10 @@ version:
 | **pipeline/pro** | PRO-seq fork: poly-A trim (1.1), strand flip, pausing index (4.3), divergent calls |
 | **pipeline/atac** | ATAC-seq pipeline (paired-end, fragment-size aware) |
 | **pipeline/templates** | Scaffolding templates consumed by `setup/new_project.sh` (gitignore, `samples` / `link_sample` / `peakcall_groups` / `tss_groups` TSV headers, project README; `README.analysis.md` is copied by hand per CONVENTIONS §11) |
-| **pipeline/tools** | Standalone utilities: heatmaps, BED liftover, peak set ops, getfasta, **go_enrichr.py** / **annotation_pie.py**, **igm_manifest.py** (IGM submission TSVs); **prep/** = IGM/ENA FASTQ download + link/merge; **viz/** = shared matplotlib style + profile plotter; topic subfolders for methodology families per CONVENTIONS.md §5 |
+| **pipeline/tools** | Standalone utilities: heatmaps, BED liftover, peak set ops, getfasta, **go_enrichr.py** / **annotation_pie.py**, **igm_manifest.py** (IGM submission TSVs); **prep/** = IGM (via Globus; legacy FTP kept) / ENA FASTQ download + link/merge; **viz/** = shared matplotlib style + profile plotter; topic subfolders for methodology families per CONVENTIONS.md §5 |
 | **setup/** | `new_project.sh` (project scaffolder), `gitall.sh` (dirty/ahead report for repos up to two levels below `~/work`; per-project repos under `seq/<assay>/<project>/` are not scanned), `check_env_drift.sh` (env newer than its yml), `clone_all.sh` + `bootstrap.md` (second-node setup), `sync_brain.sh` |
 | **maintenance/** | `archive_inactive.sh` (lossless BAM→CRAM + cleanup for `projects.tsv` rows marked `cleanup`), `dedup/dupescan.py` (cross-volume duplicate survey) |
-| **env/** | One yml per tracked env (`bio`, `rna`, `sc`, `meth`, `primer`, `pwm2`, `pwm2-pb`, `vienna`) + `lock/<env>.<date>.yml` snapshots. Spec vs export rules in `env/README.md` |
+| **env/** | One yml per tracked env (`bio`, `rna`, `sc`, `meth`, `primer`, `pwm2`, `pwm2-pb`, `vienna`, `globus`) + `lock/<env>.<date>.yml` snapshots. Spec vs export rules in `env/README.md` |
 | **project_archive** | One-off scripts from past projects (ChIP-seq, ATAC-seq, PRO-seq, CUT&RUN) |
 | **legacy** | Old MACS2-based pipeline; kept for reference |
 | **experimental** | Testing MACS3, HOMER, SEACR peak callers; peak set modes (ComplexHeatmap UpSet) |
@@ -71,7 +71,8 @@ version:
   `phantompeakqualtools` providing `run_spp.R`, plus R packages).
   Tracked in `env/bio.yml`; see `env/README.md` for rebuild and
   versioning instructions (and for the other tracked envs: `rna` for
-  STAR RNA-seq, `sc` for single-cell, `meth`, `primer`, `pwm2*`, `vienna`).
+  STAR RNA-seq, `sc` for single-cell, `meth`, `primer`, `pwm2*`, `vienna`,
+  `globus` for the globus-cli that pulls IGM deliveries).
   Per-project `references.tsv` (auto-emitted by `5_qc.sh`) records which
   env lock was active at run time. `0_config.sh` prepends the env's
   `bin/` to `PATH`; nothing `conda activate`s.
@@ -92,7 +93,11 @@ Course tutorials in `docs/tutorials/` cover CUT&RUN analysis (AWS setup, QC, ali
 
 ### `pipeline/tools/prep/` (FASTQ prep)
 
-Upstream helpers live under **`pipeline/tools/prep/`**: **`download_fastq.sh`** (IGM FTP), **`download_geo_fastq_ena.sh`** (ENA SRR / SE), **`link_fastq.sh`** (Illumina `*_R1_001` / SE maps), **`merge_lanes_inplace.sh`**, **`link_merged_fastqs.sh`**. See [pipeline/tools/prep/README.md](pipeline/tools/prep/README.md).
+Upstream helpers live under **`pipeline/tools/prep/`**: **`download_igm_fastq_globus.sh`** (IGM runs via Globus) + **`start_gcp.sh`** (the node's Globus Connect Personal endpoint), **`download_fastq.sh`** (legacy IGM FTP), **`download_geo_fastq_ena.sh`** (ENA SRR / SE), **`link_fastq.sh`** (Illumina `*_R1_001` / SE maps), **`merge_lanes_inplace.sh`**, **`link_merged_fastqs.sh`**. See [pipeline/tools/prep/README.md](pipeline/tools/prep/README.md).
+
+### `pipeline/tools/prep/download_igm_fastq_globus.sh`
+
+IGM delivers by Globus (FTP retired in 2026). One command per run: `download_igm_fastq_globus.sh <RUN_ID> "<link from the IGM share e-mail>"` pulls the run onto the node's Globus Connect Personal endpoint (restricted to `~/work/raw_seq`), verifies every file by checksum in Globus and against IGM's `md5sum.txt` (hard fail on mismatch), and stamps `logs/download_complete.tsv`. Re-running re-attaches to a transfer in flight or reports a complete run; `VERIFY_ONLY=1` serves a pull made in the web app; `BACKUP_ROOT=` copies the verified run to an archive volume. One-time setup (env, `globus login`, endpoint registration) and the endpoint commands: [pipeline/tools/prep/README.md](pipeline/tools/prep/README.md). Nothing site-specific lives in the repo — collection ids come from IGM's link, the endpoint id from the local install.
 
 ### `pipeline/tools/prep/link_fastq.sh`
 

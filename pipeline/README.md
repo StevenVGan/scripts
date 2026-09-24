@@ -15,7 +15,7 @@ promotion-path conventions; this README is a per-pipeline contents map.
 | **multiome/** | Intentionally empty: single-cell / multiome work is project-local Python under `analysis/` (CONVENTIONS §12); see [multiome/README.md](multiome/README.md) |
 | **templates/** | Scaffolding templates stamped by `../setup/new_project.sh` (gitignore, TSV headers, README) |
 | **tools/** | Analysis utilities: heatmaps (`heatmap.sh`), BED liftover, peak set ops, getfasta, subsample; **go_enrichr.py** / **annotation_pie.py** (generic Enrichr + annotation pies); **igm_manifest.py** (IGM submission TSVs). Topic subfolders allowed for methodology families (see [../CONVENTIONS.md](../CONVENTIONS.md) §5). **chip_downstream_reference/** is now a pointer to `seq/_joint/MCF7_ER_p65_cobinding/`. |
-| **tools/prep/** | Upstream FASTQ prep: IGM FTP + ENA SRR download, Illumina lane merge, symlink into project `data/` |
+| **tools/prep/** | Upstream FASTQ prep: IGM download via Globus (legacy FTP kept) + ENA SRR download, Illumina lane merge, symlink into project `data/` |
 | **tools/viz/** | `_figure_style.py` (`apply_publication_style()`, canonical matplotlib rcParams) + `_profile_plot.py`; analyses import these or copy `_figure_style.py` verbatim into `script/` |
 
 See **[tools/prep/README.md](tools/prep/README.md)** for download / link workflows before **`1_trim_qc.sh`**.
