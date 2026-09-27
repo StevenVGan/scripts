@@ -81,6 +81,9 @@ RUN_PEAK_MACS3="${RUN_PEAK_MACS3:-0}"
 RUN_PEAK_HOMER="${RUN_PEAK_HOMER:-1}"
 RUN_TSS_CSRNA="${RUN_TSS_CSRNA:-1}" # 4.3_tss_csrna.sh: HOMER findcsRNATSS.pl — csRNA-specific TSS calling
 RUN_QC="${RUN_QC:-1}"              # 5_qc.sh: preseq, plotFingerprint, PCA/Correlation, optional MACS3/TSS summary, MultiQC
+# 5_qc.sh preseq lc_extrap (library complexity). 0 = skip: csRNA TSS stacks are biological duplicates,
+# so the extrapolation is uninterpretable and costs ~3 h per deep BAM. Default 1 for continuity.
+RUN_PRESEQ="${RUN_PRESEQ:-1}"
 
 # ---- Trimming (1_trim_qc) — csRNA / short 5′ RNAs ----
 # Single Trim Galore call: auto-detects R1 3′ adapter, uses --adapter2 for R2's
@@ -94,21 +97,33 @@ TRIM_QUAL=25
 TRIM_CPU=8
 # Extra Trim Galore args (space-separated), e.g. "--clip_R1 2" — add after raw FastQC if needed
 TRIM_GALORE_EXTRA="${TRIM_GALORE_EXTRA:-}"
-# Illumina Small RNA 5′ adapter sequence — appears at R2 3′ end when insert < read length (csRNA
-# inserts are 20–65 nt). Cutadapt post-step applies this as -A (R2-only). Set empty to skip.
+# R2 3′ adapter, passed to Trim Galore as --adapter2 (R2 is trimmed with THIS sequence only; R1 is
+# auto-detected). Default = Illumina Small RNA 5′ adaptor read-through (legacy NEB E7300/E7560 kits).
+# NEB E3420 libraries carry the TruSeq Read-2 adapter instead: set AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT
+# in the project's 0_config.sh (csRNA_260915: mapping collapses like a dimer failure otherwise).
 SMALL_RNA_5P_ADAPTER="${SMALL_RNA_5P_ADAPTER:-GATCGTCGGACTGTAGAACTCTGAAC}"
 
 # ---- Alignment (2_bowtie2) ----
 BT2_CPU=12
 BAMCOV_CPU=8
+# bowtie2 preset. csRNA reads are 20–65 nt after trimming: --very-sensitive (end-to-end) keeps the 5′
+# base (= the TSS) unclipped and aligns 20–21 nt reads, which --very-sensitive-local cannot (its
+# score floor 20+8·ln(L) exceeds a perfect match for L ≤ 22; measured 2026-09-24 on MCF7 E3420 reads:
+# 93.4 % vs 82.9 % overall, 0 % of 20–21-nt reads aligned in local mode). The cnr fork keeps local.
+BT2_PRESET="${BT2_PRESET:---very-sensitive}"
 # Stranded PE orientation (required for correct strand bigWigs): set from kit chemistry, e.g. BT2_EXTRA="--fr" or BT2_EXTRA="--rf"
 BT2_EXTRA="${BT2_EXTRA:-}"
 # 1: emit strand-separated bigWigs (_fwd.bw / _rev.bw via bamCoverage --filterRNAstrand)
 STRAND_BIGWIG="${STRAND_BIGWIG:-1}"
 # When STRAND_BIGWIG=1: also emit unstranded ${sample}.bw (set 0 to save space)
 COMBINED_BIGWIG="${COMBINED_BIGWIG:-1}"
-# 1: HOMER makeTagDirectory -sspe (stranded PE); confirm against library prep
+# 1: HOMER makeTagDirectory -sspe (stranded PE); confirm against library prep.
+# With -sspe HOMER places the mate's tag at the fragment 5′ end (pair = 1.0 tag at the TSS), so -read1 is unnecessary.
 HOMER_SS_PE="${HOMER_SS_PE:-1}"
+# HOMER makeTagDirectory -tbp <#> (max tags per bp). EMPTY = no cap (csRNA default): TSS stacks are the
+# signal and findcsRNATSS assumes RNA-seq-like counts. -tbp 1 (the cnr default) collapsed a healthy
+# csRNA library ~10× and short-RNA input masks 30–50× in the HepG2-ER3XHA run (audit 2026-09-24).
+HOMER_TBP="${HOMER_TBP:-}"
 # ---- Reference (hg38) ----
 GENOME="hg38"
 # REF_ROOT = root of shared reference data (bowtie2 indexes + genome FASTAs).

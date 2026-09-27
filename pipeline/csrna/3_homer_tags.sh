@@ -20,7 +20,7 @@ shopt -s nullglob
 # Behavior
 #   - Iterates over all *_sorted.bam files.
 #   - Skips samples if their tag directory already exists.
-#   - Uses makeTagDirectory with "-tbp 1" (format auto-detected; HOMER converts BAM on the fly).
+#   - makeTagDirectory: -tbp only when HOMER_TBP is set (csRNA default: no cap), -sspe when HOMER_SS_PE=1.
 #
 # Logging
 #   - Writes a timestamped log to ${LOG_DIR}/3_homer_tags_*.log
@@ -57,7 +57,10 @@ for bam in "${sorted_bams[@]}"; do
   fi
 
   echo "[STEP3] Building tag dir: $sample_name"
-  homer_extra=( -tbp 1 )
+  homer_extra=()
+  if [[ -n "${HOMER_TBP:-}" ]]; then
+    homer_extra+=( -tbp "$HOMER_TBP" )
+  fi
   if [[ "${HOMER_SS_PE:-0}" -eq 1 ]]; then
     homer_extra+=( -sspe )
   fi

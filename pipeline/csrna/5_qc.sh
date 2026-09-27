@@ -52,14 +52,16 @@ fi
 # STEP 1: Per-BAM QC — preseq
 ###############################################################################
 
-echo "=== STEP 1: preseq (library complexity) ==="
+echo "=== STEP 1: preseq (library complexity) — RUN_PRESEQ=${RUN_PRESEQ:-1} ==="
 
 for bam in "${sorted_bams[@]}"; do
   sample=$(basename "$bam" _sorted.bam)
   echo "[STEP1] $sample"
 
   preseq_file="${BAMQC_DIR}/${sample}.preseq.txt"
-  if [[ ! -f "$preseq_file" ]]; then
+  if [[ "${RUN_PRESEQ:-1}" -ne 1 ]]; then
+    echo "  - preseq skipped (RUN_PRESEQ=0)"
+  elif [[ ! -f "$preseq_file" ]]; then
     echo "  - preseq lc_extrap -> $preseq_file"
     preseq lc_extrap -B "$bam" -o "$preseq_file" -v
   fi

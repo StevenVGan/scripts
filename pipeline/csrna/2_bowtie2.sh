@@ -58,6 +58,7 @@ echo "[INFO] TRIM_DIR:     $TRIM_DIR"
 echo "[INFO] BAM_DIR:      $BAM_DIR"
 echo "[INFO] TRACK_DIR:   $TRACK_DIR"
 echo "[INFO] Mode:        $([ "${SE:-0}" -eq 1 ] && echo "single-end" || echo "paired-end")"
+echo "[INFO] BT2_PRESET:  ${BT2_PRESET:---very-sensitive-local}"
 echo "[INFO] BT2_EXTRA:   ${BT2_EXTRA:-}"
 echo "[INFO] STRAND_BIGWIG=${STRAND_BIGWIG:-0} COMBINED_BIGWIG=${COMBINED_BIGWIG:-1}"
 
@@ -120,7 +121,7 @@ if [[ "${SE:-0}" -eq 1 ]]; then
       echo "[STEP2] Found existing BAM+BAI for $sample_name, skipping alignment."
     else
       echo "[STEP2] Aligning (single-end): $sample_name"
-      bt2_cmd=( bowtie2 -x "$GENOME_INDEX" -U "$R1" --very-sensitive-local -p "$BT2_CPU" )
+      bt2_cmd=( bowtie2 -x "$GENOME_INDEX" -U "$R1" "${BT2_PRESET:---very-sensitive-local}" -p "$BT2_CPU" )
       if [[ -n "${BT2_EXTRA:-}" ]]; then
         read -r -a bt2_extra_arr <<< "$BT2_EXTRA"
         bt2_cmd+=( "${bt2_extra_arr[@]}" )
@@ -159,7 +160,7 @@ else
       echo "[STEP2] Found existing BAM+BAI for $sample_name, skipping alignment."
     else
       echo "[STEP2] Aligning: $sample_name"
-      bt2_cmd=( bowtie2 -x "$GENOME_INDEX" -1 "$R1" -2 "$R2" --very-sensitive-local -p "$BT2_CPU" )
+      bt2_cmd=( bowtie2 -x "$GENOME_INDEX" -1 "$R1" -2 "$R2" "${BT2_PRESET:---very-sensitive-local}" -p "$BT2_CPU" )
       if [[ -n "${BT2_EXTRA:-}" ]]; then
         read -r -a bt2_extra_arr <<< "$BT2_EXTRA"
         bt2_cmd+=( "${bt2_extra_arr[@]}" )
