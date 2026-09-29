@@ -19,7 +19,11 @@
 # and re-downloads only files that changed (checksum sync). Ctrl-C or a dropped SSH session never cancels
 # the Globus task — re-run the same command later to finish the verification.
 #
-# Overrides: DEST_ROOT WAIT STALL_LOOPS NOTIFY VERIFY_ONLY BACKUP_ROOT CONDA_GLOBUS_ENV GCP_HOME GCP_PATHS
+# Overrides: DEST_ROOT WAIT STALL_LOOPS NOTIFY VERIFY_ONLY BACKUP_ROOT CONDA_GLOBUS_ENV GCP_HOME GCP_PATHS INCLUDE
+#   INCLUDE='SG*'  pull only files whose name matches one of these space-separated globs (plus md5sum.txt), e.g. our
+#                  samples from a lane shared with another lab member; the md5 check then covers only matching
+#                  manifest entries. Run a second filter (INCLUDE='XY_*') into the same run dir AFTER the first
+#                  finishes — Globus refuses two tasks with the same paths at once. Empty = the whole run folder.
 #   VERIFY_ONLY=1  no transfer; only the md5 check + completion stamp (e.g. after a pull in the Globus web app)
 #   WAIT=0         submit the transfer and exit; re-run later to wait and verify
 #   BACKUP_ROOT=   if set, copy the verified run to $BACKUP_ROOT/<RUN_ID>/ (the lab's archive volume)
@@ -35,6 +39,7 @@ STALL_LOOPS="${STALL_LOOPS:-18}"     # 10-min polls with no progress before givi
 NOTIFY="${NOTIFY:-on}"               # Globus e-mail on completion: on|off|succeeded|failed|inactive
 VERIFY_ONLY="${VERIFY_ONLY:-0}"      # 1 = md5 check + stamp only
 BACKUP_ROOT="${BACKUP_ROOT:-}"       # optional archive copy target
+INCLUDE="${INCLUDE:-}"               # optional space-separated file-name globs; "" = everything
 IGM_SOURCE_ROOT="${IGM_SOURCE_ROOT:-}"  # optional "<COLLECTION_UUID>:/<lab dir>" → SOURCE defaults to $IGM_SOURCE_ROOT/<RUN_ID>/
 # ==============================================================================================
 
@@ -42,12 +47,21 @@ RUN_ID="${1:-${RUN_ID:-}}"
 SOURCE="${2:-${SOURCE:-}}"
 PREP_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 UUID_RE='[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}'
-LABEL="raw_seq ${RUN_ID//[^A-Za-z0-9_,-]/_}"   # Globus labels allow only letters, digits, space, - _ ,
+read -ra INC_PATS <<<"$INCLUDE"
+INC_TAG="${INCLUDE//[^A-Za-z0-9_,-]/_}"        # per-filter task id + label, so a second filter never re-attaches to the first
+LABEL="raw_seq ${RUN_ID//[^A-Za-z0-9_,-]/_}${INC_TAG:+ $INC_TAG}"   # Globus labels allow only letters, digits, space, - _ ,
 
 die()  { echo "ERROR: $*" >&2; exit 1; }
 warn() { echo "[WARN] $*" >&2; }
 step() { echo "[$1/9] $2"; }
 now()  { date -Iseconds; }
+wanted() {   # $1 = file name (basename is matched, as Globus does): 0 if INCLUDE is empty or a glob matches
+  (( ${#INC_PATS[@]} == 0 )) && return 0
+  local b="${1##*/}" p
+  [[ "$b" == md5sum.txt ]] && return 0
+  for p in "${INC_PATS[@]}"; do [[ "$b" == $p ]] && return 0; done
+  return 1
+}
 
 # ---- 1. run id, destination, logs; VERIFY_ONLY short-circuit -------------------------------------------------
 [[ -n "$RUN_ID" ]] || die "usage: $(basename "$0") <RUN_ID> \"<SOURCE>\"   (or export RUN_ID/SOURCE)"
@@ -61,7 +75,7 @@ LOG_DIR="${DEST_DIR}/logs"
 mkdir -p "$DEST_DIR" "$LOG_DIR" && chmod 700 "$LOG_DIR"
 STAMP="${LOG_DIR}/download_complete.tsv"
 INCOMPLETE="${LOG_DIR}/download_incomplete.tsv"
-TASK_FILE="${LOG_DIR}/globus_task.id"
+TASK_FILE="${LOG_DIR}/globus_task${INC_TAG:+.$INC_TAG}.id"
 LIST_FILE="${LOG_DIR}/filelist.tsv"
 XFER_LOG="${LOG_DIR}/globus_transfer.log"
 exec > >(tee -a "${LOG_DIR}/download.log") 2>&1
@@ -69,7 +83,7 @@ exec > >(tee -a "${LOG_DIR}/download.log") 2>&1
 # so the signal is acted on immediately rather than after the child's own 10-min timeout) and release the lock.
 # The Globus task itself is a server-side object and keeps running; re-run this command to re-attach.
 trap 'pkill -P $$ 2>/dev/null || true; echo "interrupted — the Globus task keeps running; re-run this command to re-attach" >&2; exit 143' INT TERM
-echo "== $(now)  $(basename "$0") RUN_ID=$RUN_ID"
+echo "== $(now)  $(basename "$0") RUN_ID=$RUN_ID${INCLUDE:+ INCLUDE='$INCLUDE'}"
 
 listing_hash_on_disk() {   # what the stamp recorded (column 6), "-" for web-app pulls, "" if no stamp
   [[ -f "$STAMP" ]] && awk -F'\t' 'NR==2{print $6}' "$STAMP" || true
@@ -91,19 +105,27 @@ verify_and_stamp() {       # step 8 (+9): md5 hard-fail, completion stamp, optio
   local task="${1:-$( [[ -f "$TASK_FILE" ]] && cat "$TASK_FILE" || echo '-')}"
   local list_hash="${2:--}" md5="no-manifest" n bytes backup="-"
   step 8 "verify"
-  if [[ -f "${DEST_DIR}/md5sum.txt" ]]; then
+  local manifest="${DEST_DIR}/md5sum.txt"
+  if [[ -f "$manifest" && ${#INC_PATS[@]} -gt 0 ]]; then   # INCLUDE: check only the manifest entries it selects
+    manifest="${LOG_DIR}/md5sum.${INC_TAG}.txt"
+    grep -vE '^\s*(#|$)' "${DEST_DIR}/md5sum.txt" | while IFS= read -r line; do
+      f="$(sed -E 's/^[0-9A-Fa-f]{32}[ *]+//' <<<"$line")"; wanted "$f" && printf '%s\n' "$line"
+    done > "$manifest" || true
+    [[ -s "$manifest" ]] || { echo "ERROR: no md5sum.txt entry matches INCLUDE='$INCLUDE'" >&2; return 1; }
+  fi
+  if [[ -f "$manifest" ]]; then
     # Every manifest entry must be on disk (checked explicitly — coreutils 8.25's `md5sum --ignore-missing`
     # can silently drop an existing file), then a plain md5sum -c over the manifest.
     local listed missing
-    listed=$(grep -cvE '^\s*(#|$)' "${DEST_DIR}/md5sum.txt" || true)
-    missing=$(grep -vE '^\s*(#|$)' "${DEST_DIR}/md5sum.txt" | sed -E 's/^[0-9A-Fa-f]{32}[ *]+//' \
+    listed=$(grep -cvE '^\s*(#|$)' "$manifest" || true)
+    missing=$(grep -vE '^\s*(#|$)' "$manifest" | sed -E 's/^[0-9A-Fa-f]{32}[ *]+//' \
               | while IFS= read -r f; do [[ -e "${DEST_DIR}/${f}" ]] || printf '%s\n' "$f"; done)
     if [[ -n "$missing" ]]; then
       printf '%s\n' "$missing" > "${LOG_DIR}/md5check.log"
       echo "ERROR: $(grep -c '' <<<"$missing") of the $listed files in md5sum.txt are not on disk (names in logs/md5check.log)" >&2
       return 1
     fi
-    if (cd "$DEST_DIR" && md5sum -c md5sum.txt) > "${LOG_DIR}/md5check.log" 2>&1; then
+    if (cd "$DEST_DIR" && md5sum -c "$manifest") > "${LOG_DIR}/md5check.log" 2>&1; then
       local ok; ok=$(grep -c ': OK$' "${LOG_DIR}/md5check.log" || true)
       md5="ok:${ok}/${listed}"
       (( ok == listed )) || { echo "ERROR: md5sum -c verified $ok of $listed manifest entries (see logs/md5check.log)" >&2; return 1; }
@@ -114,6 +136,13 @@ verify_and_stamp() {       # step 8 (+9): md5 hard-fail, completion stamp, optio
     fi
   else
     warn "no md5sum.txt was delivered — integrity rests on Globus per-file checksum verification (on)"
+  fi
+  if (( ${#INC_PATS[@]} > 0 )); then
+    # A filtered pull recreates the whole source directory tree empty (globus-cli filter rules are file-type only;
+    # on a shared lane that is Reports/legacy/.../<every library on the lane>/). Drop the empty directories.
+    local pruned
+    pruned=$(find "$DEST_DIR" -mindepth 1 -type d -empty ! -path "$LOG_DIR" ! -path "${LOG_DIR}/*" -print -delete 2>/dev/null | wc -l || true)
+    (( ${pruned:-0} == 0 )) || echo "pruned $pruned empty directories left by the file-only filter"
   fi
   n=$(find "$DEST_DIR" -path "$LOG_DIR" -prune -o -type f -print | wc -l)
   bytes=$(find "$DEST_DIR" -path "$LOG_DIR" -prune -o -type f -printf '%s\n' | awk '{s+=$1} END{print s+0}')
@@ -133,8 +162,8 @@ verify_and_stamp() {       # step 8 (+9): md5 hard-fail, completion stamp, optio
     step 9 "no BACKUP_ROOT set"
     warn "single copy — this volume has no backup; set BACKUP_ROOT to copy the run to the archive volume"
   fi
-  printf 'run_id\ttask_id\tcompleted_at\tn_files\tbytes\tlisting_sha256\tmd5\tbackup\n%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' \
-    "$RUN_ID" "$task" "$(now)" "$n" "$bytes" "$list_hash" "$md5" "$backup" > "${STAMP}.tmp" && mv -f "${STAMP}.tmp" "$STAMP"
+  printf 'run_id\ttask_id\tcompleted_at\tn_files\tbytes\tlisting_sha256\tmd5\tbackup\tinclude\n%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' \
+    "$RUN_ID" "$task" "$(now)" "$n" "$bytes" "$list_hash" "$md5" "$backup" "${INCLUDE:--}" > "${STAMP}.tmp" && mv -f "${STAMP}.tmp" "$STAMP"
   rm -f "$INCOMPLETE"
   echo "Done. $RUN_ID: $n files, $bytes bytes, md5 $md5, backup $backup, stamp $STAMP" >&2
   (( backup_rc == 0 )) || die "the run is verified and stamped, but the archive copy FAILED — fix BACKUP_ROOT, then re-run with VERIFY_ONLY=1 to retry the copy"
@@ -206,22 +235,35 @@ consent_or_die() {   # $1 = rc, $2 = stderr file
 errf="$(mktemp)"; trap 'rm -f "$errf"' EXIT
 set +e; globus ls "$SRC" --format unix --jmespath 'DATA[].[type, name, size]' > "${LIST_FILE}.new" 2>"$errf"; rc=$?; set -e
 (( rc == 0 )) || consent_or_die "$rc" "$errf"
+if (( ${#INC_PATS[@]} > 0 )); then   # keep only the files INCLUDE selects (globus-cli filter rules are file-type only: every
+                                     # source directory is still traversed and created empty; verify_and_stamp prunes them)
+  while IFS=$'\t' read -r t name size; do
+    [[ "$t" == file ]] && wanted "$name" && printf '%s\t%s\t%s\n' "$t" "$name" "$size"
+  done < "${LIST_FILE}.new" > "${LIST_FILE}.sel" || true
+  mv -f "${LIST_FILE}.sel" "${LIST_FILE}.new"
+fi
 sort -o "${LIST_FILE}.new" "${LIST_FILE}.new"
 n_files=$(awk -F'\t' '$1=="file"' "${LIST_FILE}.new" | wc -l)
 n_dirs=$(awk -F'\t' '$1=="dir"' "${LIST_FILE}.new" | wc -l)
-(( n_files > 0 )) || die "no files at $SRC ($n_dirs directories) — point origin_path at the run directory itself"
+(( n_files > 0 )) || die "no files at $SRC${INCLUDE:+ matching INCLUDE='$INCLUDE'} ($n_dirs directories) — point origin_path at the run directory itself"
 LIST_HASH="$(sha256sum "${LIST_FILE}.new" | cut -c1-64)"
 mv -f "${LIST_FILE}.new" "$LIST_FILE"
 echo "listing: $n_files files, $n_dirs directories, hash ${LIST_HASH:0:12}"
 
 # ---- 5. what to do: already complete / re-attach / verify / submit ------------------------------------------------
 submit() {
-  step 6 "submit transfer → $DEST"
+  step 6 "submit transfer → $DEST${INCLUDE:+ (INCLUDE='$INCLUDE')}"
+  local filt=() p
+  if (( ${#INC_PATS[@]} > 0 )); then
+    for p in "${INC_PATS[@]}"; do filt+=(--include "$p"); done
+    filt+=(--include md5sum.txt --exclude '*')   # first match wins; other FILES stay on the source (directories are
+                                                 # recreated empty — the CLI has no dir-type rule — and pruned after verify)
+  fi
   set +e
   # --skip-source-errors: IGM run dirs carry unreadable sub-dirs (e.g. Reports/legacy/, mode 0750); without it the
   # task retries them for 3 days. Skipped entries are checked after completion (a skipped FASTQ is an error).
   TASK="$(globus transfer "$SRC" "$DEST" --recursive --sync-level checksum --verify-checksum --preserve-timestamp \
-          --skip-source-errors --label "$LABEL" --notify "$NOTIFY" --format unix --jmespath task_id 2>"$errf")"; rc=$?
+          ${filt[@]+"${filt[@]}"} --skip-source-errors --label "$LABEL" --notify "$NOTIFY" --format unix --jmespath task_id 2>"$errf")"; rc=$?
   set -e
   if (( rc != 0 )) && grep -q "identical paths has not yet completed" "$errf"; then
     # Globus refuses a second task with the same source/destination while one is in flight (e.g. the task id file was
@@ -308,6 +350,7 @@ verify_or_repair() {   # after a SUCCEEDED task: verify; on md5 mismatch re-sync
 }
 
 step 5 "state"
+STAMP_OTHER_SELECTION=0
 prev_hash="$(listing_hash_on_disk)"
 if [[ -n "$prev_hash" ]]; then
   if [[ "$prev_hash" == "$LIST_HASH" ]]; then
@@ -317,7 +360,13 @@ if [[ -n "$prev_hash" ]]; then
     (( missing == 0 )) && { echo "already complete: every listed file is on disk (web-app pull, stamped)"; exit 0; }
     echo "$missing listed files are missing on disk — transferring"
   else
-    echo "the listing changed since the stamp (re-delivery?) — transferring what is new"
+    stamp_inc="$(awk -F'\t' 'NR==2{print $9}' "$STAMP")"   # empty on a stamp written before the include column existed
+    if [[ -n "$stamp_inc" && "$stamp_inc" != "${INCLUDE:--}" ]]; then
+      echo "the stamp is for another INCLUDE selection ($stamp_inc) — this selection's own task decides below"
+      STAMP_OTHER_SELECTION=1
+    else
+      echo "the listing changed since the stamp (re-delivery?) — transferring what is new"
+    fi
   fi
 fi
 if [[ -f "$TASK_FILE" ]]; then
@@ -327,7 +376,11 @@ if [[ -f "$TASK_FILE" ]]; then
     ACTIVE)    echo "re-attaching to task $TASK (ACTIVE)"; [[ "$WAIT" == "1" ]] || { echo "WAIT=0: task still running; re-run later"; exit 0; }
                wait_task; verify_or_repair; exit 0 ;;
     INACTIVE)  die "task $TASK is INACTIVE ($(task_field "$TASK" nice_status)): run 'globus login' / the printed 'globus session consent ...' / 'globus session update', then re-run" ;;
-    SUCCEEDED) [[ -n "$prev_hash" && "$prev_hash" != "-" ]] || { echo "task $TASK SUCCEEDED earlier — verifying"; check_skipped "$TASK"; verify_or_repair; exit 0; } ;;
+    SUCCEEDED) if [[ -z "$prev_hash" || "$prev_hash" == "-" || "$STAMP_OTHER_SELECTION" == 1 ]]; then
+                 # no stamp, a web-app stamp, or a stamp for another INCLUDE selection: this selection's task is
+                 # done, so verify it rather than resubmit a full checksum sync (the stamp then records this selection)
+                 echo "task $TASK SUCCEEDED earlier — verifying"; check_skipped "$TASK"; verify_or_repair; exit 0
+               fi ;;
     *)         echo "recorded task $TASK is $status — submitting a new transfer" ;;
   esac
 fi

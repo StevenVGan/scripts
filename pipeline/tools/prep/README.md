@@ -4,7 +4,7 @@ Scripts for downloading raw FASTQs, merging Illumina lanes, and linking into a C
 
 | Script | Purpose |
 |--------|---------|
-| **download_igm_fastq_globus.sh** | **IGM runs (current):** pull a run IGM shared via Globus into `~/work/raw_seq/<RUN_ID>/` and `md5sum -c` it — `./download_igm_fastq_globus.sh <RUN_ID> "<link from the IGM share e-mail>"`; re-runnable (re-attaches / skips what is complete); `VERIFY_ONLY=1` after a pull made in the Globus web app; `BACKUP_ROOT=` copies the verified run to the archive volume |
+| **download_igm_fastq_globus.sh** | **IGM runs (current):** pull a run IGM shared via Globus into `~/work/raw_seq/<RUN_ID>/` and `md5sum -c` it — `./download_igm_fastq_globus.sh <RUN_ID> "<link from the IGM share e-mail>"`; re-runnable (re-attaches / skips what is complete); `VERIFY_ONLY=1` after a pull made in the Globus web app; `BACKUP_ROOT=` copies the verified run to the archive volume; `INCLUDE='SG*'` pulls only matching files from a shared lane |
 | **start_gcp.sh** | start this node's Globus Connect Personal endpoint, detached and restricted to `~/work/raw_seq`; called by the script above (and by cron `@reboot`) |
 | **download_fastq.sh** | LEGACY IGM FTP (`wget` + `md5sum -c`; IGM retired FTP in 2026); env-supply `FTP_USER`, `FTP_PASSWORD`, `FTP_BASE`, `DEST_DIR` |
 | **link_fastq.sh** | Symlink from `RAW_DIR` using `prefix`→`newname` map (`*_R1_001` / `*_R2_001` or SE `.fastq.gz`) |
@@ -69,6 +69,13 @@ and writes `logs/download_complete.tsv` inside the run dir. A mapped collection 
 `globus session consent ...` command and re-run. Long-read / BAM deliveries: same command; expect the "no md5sum.txt" warning.
 Web-app alternative: transfer the folder in app.globus.org onto the endpoint at `/~/work/raw_seq/<RUN_ID>/`, then
 `VERIFY_ONLY=1 ./download_igm_fastq_globus.sh <RUN_ID>`.
+
+**Shared lanes:** IGM puts every sample of a lane in one run folder, including other lab members'. `INCLUDE='SG*'`
+(space-separated file-name globs) pulls only the matching files plus `md5sum.txt`, and the md5 check then covers only the
+matching manifest entries. globus-cli filter rules apply to files only, so the source directory tree still arrives
+(empty) and is pruned once the pull has verified. To pull the rest for a colleague, run again with their prefix
+(`INCLUDE='XY_*'`) after the first transfer has finished — Globus refuses a second task with the same paths while one is
+in flight; a selection whose own task already succeeded is verified, not re-transferred.
 
 **Known delivery quirks (2026-09):** the lab's share is one guest collection laid out as `/<lab>/<RUN_ID>/` with
 `md5sum.txt`, the FASTQs, `Undetermined_*` and BCL Convert's `Logs/` + `Reports/`; `Reports/legacy/` is unreadable
