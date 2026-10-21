@@ -57,6 +57,8 @@ echo "[INFO] TRIM_DIR:     $TRIM_DIR"
 echo "[INFO] BAM_DIR:      $BAM_DIR"
 echo "[INFO] TRACK_DIR:   $TRACK_DIR"
 echo "[INFO] Mode:        $([ "${SE:-0}" -eq 1 ] && echo "single-end" || echo "paired-end")"
+echo "[INFO] Pair flags:  ${BT2_PAIR_FLAGS:-(none — permissive legacy)}"
+echo "[INFO] sort:        -@ ${SORT_CPU:-4} -m ${SORT_MEM:-2G}"
 
 if ! compgen -G "${GENOME_INDEX}.1.bt2*" > /dev/null; then
   echo "[ERROR] bowtie2 index not found at ${GENOME_INDEX}(.1.bt2) — is the NAS mounted / REF_ROOT set for a no-NAS node? (REF_ROOT=${REF_ROOT})" >&2
@@ -86,7 +88,7 @@ if [[ "${SE:-0}" -eq 1 ]]; then
     else
       echo "[STEP2] Aligning (single-end): $sample_name"
       bowtie2 -x "$GENOME_INDEX" -U "$R1" --very-sensitive -p "$BT2_CPU" 2> "$bt2_log" \
-        | samtools sort -@ "$BT2_CPU" -o "$sorted_bam" -
+        | samtools sort -@ "${SORT_CPU:-4}" -m "${SORT_MEM:-2G}" -o "$sorted_bam" -
       samtools index "$sorted_bam"
     fi
 
@@ -125,8 +127,10 @@ else
       echo "[STEP2] Found existing BAM+BAI for $sample_name, skipping alignment."
     else
       echo "[STEP2] Aligning: $sample_name"
-      bowtie2 -x "$GENOME_INDEX" -1 "$R1" -2 "$R2" --very-sensitive -p "$BT2_CPU" 2> "$bt2_log" \
-        | samtools sort -@ "$BT2_CPU" -o "$sorted_bam" -
+      # BT2_PAIR_FLAGS is a deliberate word-split list; empty = permissive
+      # shellcheck disable=SC2086
+      bowtie2 -x "$GENOME_INDEX" -1 "$R1" -2 "$R2" --very-sensitive ${BT2_PAIR_FLAGS:-} -p "$BT2_CPU" 2> "$bt2_log" \
+        | samtools sort -@ "${SORT_CPU:-4}" -m "${SORT_MEM:-2G}" -o "$sorted_bam" -
       samtools index "$sorted_bam"
     fi
 

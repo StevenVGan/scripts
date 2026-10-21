@@ -61,7 +61,8 @@ for bam in "${sorted_bams[@]}"; do
   tagdir_cmd=( makeTagDirectory "$outdir" "$bam" )
   # HOMER_TBP empty => omit -tbp entirely (HOMER default = no cap). See 0_config.sh.
   [[ -n "${HOMER_TBP:-}" && "${HOMER_TBP}" != "0" ]] && tagdir_cmd+=( -tbp "$HOMER_TBP" )
-  echo "[STEP3] tags-per-bp cap: ${HOMER_TBP:-none}"
+  [[ "${HOMER_CHECKGC:-1}" -eq 1 ]] && tagdir_cmd+=( -genome "$GENOME" -checkGC )
+  echo "[STEP3] tags-per-bp cap: ${HOMER_TBP:-none}; checkGC: ${HOMER_CHECKGC:-1}"
   "${tagdir_cmd[@]}"
 done
 

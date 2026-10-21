@@ -91,11 +91,16 @@ while IFS=$'\t' read -r ip_spec ctrl_spec name type _rest; do
     --format "$MACS3_FORMAT"
     --keep-dup "$MACS3_KEEPDUP"
     --outdir "$MACS3_DIR"
+    --tempdir "$TMPDIR"
     --name "$name"
   )
   [[ "$use_control" -eq 1 ]] && macs_cmd+=( -c "$control_file" )
   [[ "$type_upper" == "HISTONE" ]] && macs_cmd+=( --broad --broad-cutoff "$MACS3_BROAD_CUTOFF" )
 
+  # MACS3 does not remove a previous run's files (a row switched broad -> narrow would keep its old broadPeak, and 5_qc labels on
+  # whichever file exists): start every row clean (2026-10-20)
+  rm -f "${MACS3_DIR}/${name}_peaks."{narrowPeak,broadPeak,gappedPeak,xls} "${MACS3_DIR}/${name}_summits.bed" \
+        "${MACS3_DIR}/${name}_filtered.bed" "${MACS3_DIR}/${name}.annotatePeaks.txt"
   "${macs_cmd[@]}"
 
   narrowPeak_file="${MACS3_DIR}/${name}_peaks.narrowPeak"

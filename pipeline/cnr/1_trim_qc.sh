@@ -46,6 +46,9 @@ echo "[INFO] RAW_DIR:  $RAW_DIR"
 echo "[INFO] TRIM_DIR: $TRIM_DIR"
 echo "[INFO] Mode:     $([ "${SE:-0}" -eq 1 ] && echo "single-end" || echo "paired-end")"
 
+# quality trimming: 2-colour aware (--2colour) or plain -q — see TRIM_2COLOUR in 0_config.sh
+if [[ "${TRIM_2COLOUR:-1}" -eq 1 ]]; then TRIM_QARGS=(--2colour "$TRIM_QUAL"); else TRIM_QARGS=(-q "$TRIM_QUAL"); fi
+echo "[INFO] Quality:  ${TRIM_QARGS[*]}"
 r1_files=( "${RAW_DIR}"/*_R1.fastq.gz )
 if (( ${#r1_files[@]} == 0 )); then
   echo "[ERROR] No *_R1.fastq.gz files found in $RAW_DIR"
@@ -60,7 +63,7 @@ if [[ "${SE:-0}" -eq 1 ]]; then
     trim_galore \
       --cores "$TRIM_CPU" \
       --output_dir "$TRIM_DIR" \
-      -q "$TRIM_QUAL" \
+      "${TRIM_QARGS[@]}" \
       --phred33 \
       --stringency "$TRIM_STRINGENCY" \
       --length "$TRIM_MIN_LENGTH" \
@@ -82,7 +85,7 @@ else
       --paired \
       --cores "$TRIM_CPU" \
       --output_dir "$TRIM_DIR" \
-      -q "$TRIM_QUAL" \
+      "${TRIM_QARGS[@]}" \
       --phred33 \
       --stringency "$TRIM_STRINGENCY" \
       --length "$TRIM_MIN_LENGTH" \
@@ -102,7 +105,7 @@ fi
 
 fastqc \
   --outdir "${TRIM_DIR}/fastqc" \
-  --threads "$TRIM_CPU" \
+  --threads "${FASTQC_THREADS:-$TRIM_CPU}" \
   "${trimmed[@]}"
 
 echo "=== STEP 1 complete ==="

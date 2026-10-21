@@ -8,14 +8,15 @@ shopt -s nullglob
 # Purpose
 #   HOMER peak calling (findPeaks) + annotation (annotatePeaks) in one step.
 #   Uses peakcall_groups: TF → factor style, Histone → histone style.
-#   Keeps only findPeaks headers as a small QC stats file; removes full peak .txt.
+#   Keeps the findPeaks header lines as a small QC stats file; the full peak table is gzipped
+#   (its per-peak fold/p-vs-control and clonal columns are what annotatePeaks drops).
 #   Final output: annotatePeaks table, filtered by blacklist.
 #
 # Flow per group
 #   1) findPeaks → *_peaks.txt or *_regions.txt (by type)
 #   2) annotatePeaks.pl → ${name}.annotatePeaks.txt
 #   3) Save findPeaks header lines to ${name}_peaks_stats.txt or _regions_stats.txt
-#   4) Remove the full *_peaks.txt / *_regions.txt
+#   4) gzip the full *_peaks.txt / *_regions.txt
 #   5) Filter .annotatePeaks.txt by blacklist (remove overlapping rows)
 #
 # Outputs
@@ -114,10 +115,13 @@ while IFS=$'\t' read -r ip_spec ctrl_spec name type _rest; do
   echo "[STEP4.2] $name  style=$style  -> annotate -> stats only -> filter annotatePeaks"
 
   # 1) findPeaks
+  # factor-style rows take FINDPEAKS_FACTOR_EXTRA (e.g. "-size 200"); histone rows never do (2026-10-20)
+  fp_extra=()
+  [[ "$style" == "factor" && -n "${FINDPEAKS_FACTOR_EXTRA:-}" ]] && read -ra fp_extra <<<"$FINDPEAKS_FACTOR_EXTRA"
   if [[ "$use_control" -eq 1 ]]; then
-    findPeaks "$tag_dir" -style "$style" -o "$out_file" -i "$ctrl_tag_dir"
+    findPeaks "$tag_dir" -style "$style" ${fp_extra[@]+"${fp_extra[@]}"} -o "$out_file" -i "$ctrl_tag_dir"
   else
-    findPeaks "$tag_dir" -style "$style" -o "$out_file"
+    findPeaks "$tag_dir" -style "$style" ${fp_extra[@]+"${fp_extra[@]}"} -o "$out_file"
   fi
 
   [[ ! -f "$out_file" ]] && continue
@@ -127,7 +131,7 @@ while IFS=$'\t' read -r ip_spec ctrl_spec name type _rest; do
 
   # 3) Keep only findPeaks headers for QC stats, then remove full peak file
   grep '^#' "$out_file" > "$stats_file"
-  rm -f "$out_file"
+  gzip -f "$out_file"   # keep the per-peak findPeaks columns (fold/p vs control, clonal) that annotatePeaks drops; peaks/ is untracked
 
   # 4) Filter annotatePeaks by blacklist (annotatePeaks: col1=PeakID, col2=Chr, col3=Start, col4=End)
   if [[ "$SKIP_BLACKLIST" -eq 1 ]] || [[ ! -f "$ann_file" ]]; then

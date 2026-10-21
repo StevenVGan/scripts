@@ -62,12 +62,19 @@ ALIGN_DIR="${BASE}/align"
 BAM_DIR="${BAM_DIR:-${ALIGN_DIR}/bam}"   # 2, 3, 4.1, 4.2, 5_qc
 TRACK_DIR="${ALIGN_DIR}/track"       # 2_bowtie2 bigWigs
 BAMQC_DIR="${BAM_DIR}/bamqc"        # 2 (idxstats, stats), 5_qc
-TAG_DIR="${ALIGN_DIR}/tags"         # 3_homer_tags out; 4.2 input
-PEAK_DIR="${BASE}/peaks"
+TAG_DIR="${TAG_DIR:-${ALIGN_DIR}/tags}"   # 3_homer_tags out; 4.2 input (env-overridable for a variant tag set)
+PEAK_DIR="${PEAK_DIR:-${BASE}/peaks}"   # env-overridable: PEAK_DIR=$BASE/peaks_keepdupall MACS3_KEEPDUP=all ... for a variant call
+                                        # (run variants with RUN_QC=0: MULTIQC_OUT is not variant-aware)
 MACS3_DIR="${PEAK_DIR}/macs3"        # 4.1 out; 5_qc optional summary
 HOMER_PEAK_DIR="${PEAK_DIR}/homer"   # 4.2 out
 MULTIQC_OUT="${BASE}/multiqc"        # 5_qc
 LOG_DIR="${BASE}/logs"
+
+# Scratch for tools that write temporary files (deepTools bedGraph chunks; MACS3 --tempdir). Project-local on
+# purpose: the nightly /tmp cleaner on linux01 (~/work/guard/clean_tmp.sh --apply, 04:00) deleted _deeptools_*.bg
+# under a running bamCoverage on 2026-10-21. The guard now skips them while deepTools runs, but pipeline scratch
+# stays off /tmp regardless. Lives under the standard, git-ignored scratch/. Override with PIPELINE_TMPDIR=/path.
+TMPDIR="${PIPELINE_TMPDIR:-${BASE}/scratch/tmp}"; export TMPDIR
 
 # ---- Single-end mode (SE=1) vs paired-end (SE=0, default) ----
 # Affects: link_fastq (R2 optional), 1_trim_qc, 2_bowtie2, MACS3 format
@@ -81,17 +88,29 @@ RUN_BOWTIE2="${RUN_BOWTIE2:-1}"
 RUN_HOMER_TAGS="${RUN_HOMER_TAGS:-1}"
 RUN_PEAK_MACS3="${RUN_PEAK_MACS3:-0}"
 RUN_PEAK_HOMER="${RUN_PEAK_HOMER:-1}"
-RUN_QC="${RUN_QC:-1}"              # 5_qc.sh: preseq, run_spp.R, plotFingerprint, PCA/Correlation, optional MACS3 summary, MultiQC
+RUN_QC="${RUN_QC:-1}"              # 5_qc.sh: preseq, plotFingerprint (+ per-control JSD), bamPEFragmentSize, estimateReadFiltering, PCA/Correlation, optional run_spp.R (RUN_SPP=1) + MACS3 summary, MultiQC
 
 
 # ---- Trimming (1_trim_qc) ----
 TRIM_STRINGENCY=5
 TRIM_MIN_LENGTH=36
 TRIM_QUAL=25
-TRIM_CPU=8
+TRIM_CPU=4                     # Trim Galore --cores: 4 ≈ 15 threads for PE (its own "sweet spot"); 8 ≈ 27, over the 16-CPU cap (2026-10-20)
+FASTQC_THREADS=8               # FastQC: one thread per file
+# 2-colour chemistry (NovaSeq, NextSeq, NovaSeq X): --2colour <Q> trims poly-G tails together with low quality; set 0 for 4-colour
+# instruments (HiSeq/MiSeq) to fall back to plain -q <Q>. Trim Galore 0.6.x does not auto-detect this.
+TRIM_2COLOUR="${TRIM_2COLOUR:-1}"
 
 # ---- Alignment (2_bowtie2) ----
 BT2_CPU=12
+SORT_CPU=4                     # samtools sort -@ = ADDITIONAL threads; 12 + 4 keeps the bowtie2|sort pipe at the 16-CPU cap
+SORT_MEM=2G                    # samtools sort -m per thread
+# Pairing policy (2026-10-20): concordant pairs only, the Henikoff / EpiCypher / nf-core-cutandrun CUT&RUN recipe.
+# MACS3 BAMPE always used proper pairs only; with these flags HOMER tags, bigWigs and FRiP see the same fragment set,
+# --dovetail keeps sub-read-length fragments with 1–4 bp adapter remnants, and -X 700 keeps 500–700 bp di-nucleosome pairs
+# that the bowtie2 default (-X 500) made discordant. Projects before 2026-10-20 ran bare --very-sensitive = BT2_PAIR_FLAGS="".
+# NB "-" not ":-": an EMPTY value means the permissive legacy behaviour, not the default.
+BT2_PAIR_FLAGS="${BT2_PAIR_FLAGS-"--no-mixed --no-discordant --dovetail -I 10 -X 700"}"
 BAMCOV_CPU=8
 GENOME="hg38"
 # REF_ROOT = root of shared reference data (bowtie2 indexes + genome FASTAs).
@@ -101,7 +120,10 @@ GENOME_INDEX="${GENOME_INDEX:-${REF_ROOT}/align/bowtie2/${GENOME}_noalt/${GENOME
 
 # ---- QC (5_qc) ----
 QC_THREADS=8
-BAMQC_REGION="chr19"           # multiBamSummary: one chr for speed; empty = whole genome
+BAMQC_REGION=""                # multiBamSummary: empty = genome-wide spaced bins (below); a chromosome name = that chromosome only (pre-2026-10 default chr19)
+BAMQC_BINSIZE=10000            # bin size for the PCA / correlation matrix
+BAMQC_DISTANCE=90000           # distance between bins (genome-wide mode): ~31k bins on hg38
+RUN_SPP="${RUN_SPP:-0}"        # phantompeakqualtools: 0 since 2026-10-20 — on paired-end CUT&RUN BAMs NSC/RSC are tautological (both mates present) and it costs hours; 1 = legacy behaviour
 
 # ---- Coverage / deepTools (2_bowtie2: bamCoverage) ----
 BINSIZE=10
@@ -123,6 +145,9 @@ DELETE_TRIMMED_AFTER_ALIGN=1   # delete *_val_*.fq.gz after alignment
 #   MACS3_KEEPDUP    : MACS3 --keep-dup value: "1", "3", ..., "all", or "auto"
 # If BAM_DIR already points at a PRE-CAPPED BAM set, set all three to their no-cap values
 # (0 / empty / all) or the cap is applied twice.
+# PE note: HOMER stores each mate as a 0.5-weight tag, so -tbp 1 = TWO identical 5'-ends per bp per strand, and findPeaks
+# re-caps at its own -tbp auto (= 1.0 at typical depth). HOMER_TBP="" alone therefore does NOT give an uncapped HOMER call;
+# an uncapped variant needs HOMER_TBP="" + a separate TAG_DIR + FINDPEAKS_FACTOR_EXTRA="-tbp 0 -C 0".
 BAMCOV_IGNOREDUP="${BAMCOV_IGNOREDUP:-1}"
 HOMER_TBP="${HOMER_TBP-1}"     # NB "-" not ":-" so HOMER_TBP="" means "no cap", not "1"
 MACS3_KEEPDUP="${MACS3_KEEPDUP:-1}"
@@ -139,10 +164,17 @@ MACS3_GENOMESIZE="hs"
 MACS3_FDR=0.05
 MACS3_BROAD_CUTOFF=0.10
 
+# HOMER (4.2) — extra findPeaks arguments for -style factor rows only (e.g. "-size 200" for a fixed TF window, "-tbp 0 -C 0" for an
+# uncapped variant); empty = HOMER defaults (-size auto). -style histone rows are never touched.
+FINDPEAKS_FACTOR_EXTRA="${FINDPEAKS_FACTOR_EXTRA:-}"
+# HOMER (3) — makeTagDirectory -genome <GENOME> -checkGC: per-library tag-GC vs genome-GC tables (MultiQC HOMER module draws them;
+# the one post-alignment contamination readout). 0 to skip.
+HOMER_CHECKGC="${HOMER_CHECKGC:-1}"
+
 ###############################################################################
 # Helpers
 ###############################################################################
-mkdir -p "$RAW_DIR" "$TRIM_DIR" "$ALIGN_DIR" "$BAM_DIR" "$TRACK_DIR" "$BAMQC_DIR" "$TAG_DIR" "$PEAK_DIR" "$MACS3_DIR" "$HOMER_PEAK_DIR" "$LOG_DIR" "$MULTIQC_OUT"
+mkdir -p "$TMPDIR" "$RAW_DIR" "$TRIM_DIR" "$ALIGN_DIR" "$BAM_DIR" "$TRACK_DIR" "$BAMQC_DIR" "$TAG_DIR" "$PEAK_DIR" "$MACS3_DIR" "$HOMER_PEAK_DIR" "$LOG_DIR" "$MULTIQC_OUT"
 
 check_cmd() {
   local cmd="$1"
