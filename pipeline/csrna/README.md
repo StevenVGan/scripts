@@ -39,6 +39,7 @@ Override: `BASE=/path/to/project ./run_all.sh`
 | `TRIM_MIN_LENGTH` | `20` | Post-trim minimum length (HOMER csRNA example uses ~20 nt floor) |
 | `TRIM_QUAL` | `25` | Phred threshold for 3′ quality trimming (20 is a common looser baseline) |
 | `BAMCOV_IGNORE_DUP` | `0` | Set `1` to add `--ignoreDuplicates` to `bamCoverage` (HOMER discourages dedup for csRNA signal) |
+| `TMPDIR` (override `PIPELINE_TMPDIR`) | `$BASE/scratch/tmp` | Scratch for deepTools bedGraph chunks and MACS3 `--tempdir`, kept out of /tmp: the nightly /tmp cleaner (`guard/clean_tmp.sh`, 04:00) deleted `_deeptools_*.bg` under a running bamCoverage on 2026-10-21. The guard now skips them while deepTools runs; pipeline scratch stays off /tmp regardless. |
 
 ## Parameter notes (literature / docs)
 

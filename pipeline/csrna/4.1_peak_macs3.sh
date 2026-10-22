@@ -90,6 +90,7 @@ while IFS=$'\t' read -r ip_spec ctrl_spec name type _rest; do
     -q "$MACS3_FDR"
     --format "$MACS3_FORMAT"
     --outdir "$MACS3_DIR"
+    --tempdir "$TMPDIR"
     --name "$name"
   )
   [[ "$use_control" -eq 1 ]] && macs_cmd+=( -c "$control_file" )

@@ -83,6 +83,7 @@ RUN_TRIM=0 RUN_BOWTIE2=0 RUN_HOMER_TAGS=0 RUN_PEAK_MACS3=0 RUN_PEAK_HOMER=0 RUN_
 - **chrM filter**: ATAC libraries are typically 20–80% mitochondrial; removed *after* dup marking so the marked BAM still reflects the full library complexity.
 - **HOMER `-style dnase`**: matched DNase-hypersensitivity peak shape; appropriate for ATAC point-source peaks ([HOMER findPeaks docs](http://homer.ucsd.edu/homer/ngs/peaks.html)).
 - **TSS enrichment**: a positive ATAC dataset shows clear enrichment within ±500 bp of annotated TSSs; a flat profile suggests poor signal-to-noise.
+- **`TMPDIR`** (override `PIPELINE_TMPDIR`, default `$BASE/scratch/tmp`): scratch for deepTools bedGraph chunks and MACS3 `--tempdir`, kept out of /tmp. The nightly /tmp cleaner (`guard/clean_tmp.sh`, 04:00) deleted `_deeptools_*.bg` under a running bamCoverage on 2026-10-21; the guard now skips them while deepTools runs, but pipeline scratch stays off /tmp regardless.
 
 ## Requirements
 

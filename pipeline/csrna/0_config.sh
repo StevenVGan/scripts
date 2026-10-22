@@ -67,6 +67,12 @@ HOMER_PEAK_DIR="${PEAK_DIR}/homer"   # 4.2 out
 MULTIQC_OUT="${BASE}/multiqc"        # 5_qc
 LOG_DIR="${BASE}/logs"
 
+# Scratch for tools that write temporary files (deepTools bedGraph chunks; MACS3 --tempdir). Project-local on
+# purpose: the nightly /tmp cleaner on linux01 (~/work/guard/clean_tmp.sh --apply, 04:00) deleted _deeptools_*.bg
+# under a running bamCoverage on 2026-10-21. The guard now skips them while deepTools runs, but pipeline scratch
+# stays off /tmp regardless. Lives under the standard, git-ignored scratch/. Override with PIPELINE_TMPDIR=/path.
+TMPDIR="${PIPELINE_TMPDIR:-${BASE}/scratch/tmp}"; export TMPDIR
+
 # ---- Single-end mode (SE=1) vs paired-end (SE=0, default) ----
 # Affects: link_fastq (R2 optional), 1_trim_qc, 2_bowtie2, MACS3 format
 SE="${SE:-0}"
@@ -171,7 +177,7 @@ CSRNA_GTF="${CSRNA_GTF:-}"
 ###############################################################################
 # Helpers
 ###############################################################################
-mkdir -p "$RAW_DIR" "$TRIM_DIR" "$ALIGN_DIR" "$BAM_DIR" "$TRACK_DIR" "$BAMQC_DIR" "$TAG_DIR" "$PEAK_DIR" "$MACS3_DIR" "$HOMER_PEAK_DIR" "$TSS_DIR" "$LOG_DIR" "$MULTIQC_OUT"
+mkdir -p "$TMPDIR" "$RAW_DIR" "$TRIM_DIR" "$ALIGN_DIR" "$BAM_DIR" "$TRACK_DIR" "$BAMQC_DIR" "$TAG_DIR" "$PEAK_DIR" "$MACS3_DIR" "$HOMER_PEAK_DIR" "$TSS_DIR" "$LOG_DIR" "$MULTIQC_OUT"
 
 check_cmd() {
   local cmd="$1"

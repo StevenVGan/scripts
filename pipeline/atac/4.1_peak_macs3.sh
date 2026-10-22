@@ -79,6 +79,7 @@ while IFS=$'\t' read -r ip_spec ctrl_spec name type _rest; do
     --extsize "$MACS3_EXTSIZE"
     --keep-dup "$MACS3_KEEP_DUP"
     --outdir "$MACS3_DIR"
+    --tempdir "$TMPDIR"
     --name "$name"
   )
   "${macs_cmd[@]}"

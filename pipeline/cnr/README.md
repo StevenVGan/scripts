@@ -66,7 +66,7 @@ RUN_TRIM=0 RUN_BOWTIE2=0 RUN_HOMER_TAGS=0 RUN_PEAK_MACS3=0 RUN_PEAK_HOMER=0 RUN_
 
 Also since 2026-10-20: `preseq -P` on PE BAMs; `bamPEFragmentSize` + `estimateReadFiltering` tables; per-control `plotFingerprint --JSDsample` metrics for every distinct control in `peakcall_groups.tsv` (tables in `align/bam/bamqc/fingerprint_metrics_<control>.txt`, kept out of MultiQC because sample names collide across controls); FRiP on the proper-pair universe (`FRiP_properpair`), IP BAM looked up by row name so contrast / `_noctrl` / `_narrow` rows resolve; MACS3 outputs of a row are removed before each call; HOMER `findPeaks` tables are gzipped instead of deleted; MultiQC shows properly-paired %, MQ0 %, insert size and the MACS3 redundancy columns, and ignores `qc/spikein/` and `qc/contam/`. For a sharp histone mark (H3K4me3) add a duplicate row typed `TF` (`<name>_narrow`) to get a MACS3 narrowPeak set next to the `Histone` (broad / HOMER histone-style) call.
 
-**Forks:** `../atac/`, `../csrna/`, `../pro/` carry their own copies of these steps and were NOT updated on 2026-10-20.
+**Forks:** `../atac/`, `../csrna/`, `../pro/` carry their own copies of these steps. They received only the `TMPDIR` scratch handling (2026-10-21); the other 2026-10-20 parameter decisions were NOT ported.
 
 ## Requirements
 

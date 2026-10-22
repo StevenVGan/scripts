@@ -39,6 +39,7 @@ Raw FASTQs (data/)  →  1_trim_qc  →  1.1_polya_trim (optional)  →  2_bowti
 | `RUN_PEAK_MACS3` | `0` | Rarely appropriate for nascent RNA |
 | `RUN_PEAK_HOMER` | `1` | `findPeaks -style groseq` |
 | `RUN_PAUSING` | `1` | Step 4.3 (pausing index + divergent pairs) |
+| `TMPDIR` (override `PIPELINE_TMPDIR`) | `$BASE/scratch/tmp` | Scratch for deepTools bedGraph chunks and MACS3 `--tempdir`, kept out of /tmp: the nightly /tmp cleaner (`guard/clean_tmp.sh`, 04:00) deleted `_deeptools_*.bg` under a running bamCoverage on 2026-10-21. The guard now skips them while deepTools runs; pipeline scratch stays off /tmp regardless. |
 
 ## Why PRO-seq needs the strand flip
 
