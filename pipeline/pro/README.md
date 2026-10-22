@@ -2,7 +2,7 @@
 
 Fork of [`../csRNA`](../csRNA) adapted for PRO-seq chemistry. The csRNA fork already handles stranded small-insert libraries correctly; this fork adds three PRO-seq-specific changes:
 
-1. **Strand flip** (`PROSEQ_FLIP_STRAND=1`) — PRO-seq R1 is the reverse complement of the nascent RNA (Kwak et al. 2013, *Science*). `makeTagDirectory -flip` + swapped `--filterRNAstrand` labels make `_fwd.bw` and all HOMER tag-based tools reflect the RNA strand.
+1. **Strand flip** (`PROSEQ_FLIP_STRAND=1`) — PRO-seq R1 is the reverse complement of the nascent RNA (Kwak et al. 2013, *Science*). `makeTagDirectory -flip` + swapped `--filterRNAstrand` labels make `_fwd.bw` and all HOMER tag-based tools reflect the RNA strand. Both strand tracks reuse the unstranded track's scale factor (`<sample>.scale_factor`), so `_fwd` + `_rev` = the unstranded track; strand tracks built before 2026-09-29 were each RPGC-normalised on their own reads and are not on a common scale.
 2. **Feature calling** — `findPeaks -style groseq` (via `HOMER_STYLE`) replaces `findcsRNATSS.pl`; purpose-built for GRO/PRO-seq nascent transcripts.
 3. **Pausing index + divergent eRNA** (step 4.3) — per-gene PI = promoter density / gene-body density, plus bidirectional pairs from groseq transcripts. Replaces csRNA's `4.3_tss_csrna.sh`.
 
