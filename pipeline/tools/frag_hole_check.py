@@ -16,6 +16,9 @@ seen. With d = fragments per 10,000 at each length:
   spike = mean d at L … L + 4      /  the same flanks                                     (about 1 = no spike)
 Status: ok, HOLE (hole < --hole-min), SPIKE (spike > --spike-max), both, or LOW_COUNT when the flanks hold fewer than
 --min-flank fragments in all. It warns and exits 0; it never stops a pipeline.
+The ratios assume the length distribution is smooth across L ± 9. When a real mode sits there, the spike ratio moves without
+any artefact: at PE151 the mono-nucleosome peak of histone marks lies at the read length (GS37 H3K27me3, stringency 5 and no
+--dovetail, so no remnant pairs kept: spike 1.22–1.25, hole 0.02). Read a histone library's flag against its histogram.
 
 Output: one TSV row per BAM, with a MultiQC custom-content header (name it *_mqc.tsv to have MultiQC show it).
 
