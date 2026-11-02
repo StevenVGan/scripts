@@ -9,7 +9,8 @@ shopt -s nullglob
 #
 # Steps:
 #   1) Per-BAM: preseq (complexity extrapolation) + phantompeakqualtools (run_spp.R)
-#   2) deepTools: plotFingerprint, multiBamSummary → plotPCA/plotCorrelation
+#   2) deepTools: plotFingerprint, multiBamSummary → plotPCA/plotCorrelation; PE: fragment sizes, read filtering,
+#      and the read-length hole per library (pipeline/tools/frag_hole_check.py, bamqc/frag_hole_check_mqc.tsv)
 #   3) MACS3 summary (optional): only if MACS3_DIR has peak files
 #   4) Write multiqc_config.yaml (minimal; merges sample names)
 #   5) Run multiqc
@@ -133,6 +134,26 @@ if [[ "${SE:-0}" -ne 1 ]]; then
     erf_args=( -b "${sorted_bams[@]}" --sampleLabels "${labels[@]}" --ignoreDuplicates --minMappingQuality 10 --samFlagInclude 2 -p "$THREADS" -o "$ERF" )
     [[ -f "${BLACKLIST:-}" ]] && erf_args+=( --blackListFileName "$BLACKLIST" )
     estimateReadFiltering "${erf_args[@]}"
+  fi
+  # Read-length hole (2026-11-01): fragments 1–4 bp shorter than the read that kept adapter show as a hole at read length − 4 … − 1
+  # and a spike just above (see TRIM_STRINGENCY in 0_config.sh). Rebuilt when any BAM is newer than the table; flagged libraries
+  # are printed as [WARN] and listed in MultiQC ("Read-length hole"). Never stops the step.
+  HOLE_TSV="${BAMQC_DIR}/frag_hole_check_mqc.tsv"
+  FRAG_HOLE_CHECK="${FRAG_HOLE_CHECK:-${HOME}/work/scripts/pipeline/tools/frag_hole_check.py}"
+  hole_stale=0
+  [[ -f "$HOLE_TSV" ]] || hole_stale=1
+  for bam in "${sorted_bams[@]}"; do
+    if [[ "$bam" -nt "$HOLE_TSV" ]]; then hole_stale=1; fi
+  done
+  if [[ "$hole_stale" -eq 1 ]]; then
+    if [[ -f "$FRAG_HOLE_CHECK" ]]; then
+      echo "[STEP2] frag_hole_check (read-length hole per library)"
+      hole_args=( --out "$HOLE_TSV" --jobs "$THREADS" )
+      [[ -f "${BLACKLIST:-}" ]] && hole_args+=( --blacklist "$BLACKLIST" )
+      python3 "$FRAG_HOLE_CHECK" "${hole_args[@]}" "${sorted_bams[@]}" || echo "[WARN] frag_hole_check failed; no hole table"
+    else
+      echo "[WARN] frag_hole_check not found: $FRAG_HOLE_CHECK; no hole table"
+    fi
   fi
 fi
 

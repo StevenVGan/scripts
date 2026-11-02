@@ -92,7 +92,17 @@ RUN_QC="${RUN_QC:-1}"              # 5_qc.sh: preseq, plotFingerprint (+ per-con
 
 
 # ---- Trimming (1_trim_qc) ----
-TRIM_STRINGENCY=5
+# Stringency = the shortest adapter overlap cutadapt trims. 1 since 2026-11-01 (was 5, origin unrecorded): at 5 a fragment 1–4 bp
+# shorter than the read keeps 1–4 bp of adapter on both reads, the mates overshoot each other, and the library shows a hole at
+# read length − 4 … − 1 with a spike just above it. Tested on all 16 libraries of a PE101 batch (seq/cnr/CnR_261006_…/analysis/
+# trim_stringency_effect_v1): hole closed, pairs at MAPQ >= 30 in place, long-fragment tracks and all-fragment peaks unchanged.
+# Cost: any read ending in A (or the adapter's first base) loses that base. 1_trim_qc.sh therefore uses TRIM_STRINGENCY_FALLBACK
+# for single-end runs and for libraries whose shorter mate is under TRIM_STRINGENCY_MIN_READ bp (to --length, 36-bp reads lost
+# 77 % of pairs at 1 against 36 % at 5; 50-bp reads, no difference). 5_qc.sh reports the hole per library (frag_hole_check). Do not use 1 where the
+# read's 3' end is the biological end (small RNA, RNA 3' ends); the csrna / pro / atac / rna forks keep 5.
+TRIM_STRINGENCY=1
+TRIM_STRINGENCY_FALLBACK=5
+TRIM_STRINGENCY_MIN_READ=50
 TRIM_MIN_LENGTH=36
 TRIM_QUAL=25
 TRIM_CPU=4                     # Trim Galore --cores: 4 ≈ 15 threads for PE (its own "sweet spot"); 8 ≈ 27, over the 16-CPU cap (2026-10-20)
@@ -107,7 +117,7 @@ SORT_CPU=4                     # samtools sort -@ = ADDITIONAL threads; 12 + 4 k
 SORT_MEM=2G                    # samtools sort -m per thread
 # Pairing policy (2026-10-20): concordant pairs only, the Henikoff / EpiCypher / nf-core-cutandrun CUT&RUN recipe.
 # MACS3 BAMPE always used proper pairs only; with these flags HOMER tags, bigWigs and FRiP see the same fragment set,
-# --dovetail keeps sub-read-length fragments with 1–4 bp adapter remnants, and -X 700 keeps 500–700 bp di-nucleosome pairs
+# --dovetail keeps sub-read-length fragments with 1–4 bp adapter remnants (rare since TRIM_STRINGENCY=1; kept as the backstop), and -X 700 keeps 500–700 bp di-nucleosome pairs
 # that the bowtie2 default (-X 500) made discordant. Projects before 2026-10-20 ran bare --very-sensitive = BT2_PAIR_FLAGS="".
 # NB "-" not ":-": an EMPTY value means the permissive legacy behaviour, not the default.
 BT2_PAIR_FLAGS="${BT2_PAIR_FLAGS-"--no-mixed --no-discordant --dovetail -I 10 -X 700"}"

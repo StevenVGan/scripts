@@ -52,6 +52,7 @@ RUN_TRIM=0 RUN_BOWTIE2=0 RUN_HOMER_TAGS=0 RUN_PEAK_MACS3=0 RUN_PEAK_HOMER=0 RUN_
 
 | Knob | Default | What it does |
 |------|---------|--------------|
+| `TRIM_STRINGENCY` | `1` (since 2026-11-01; was `5`) | Shortest adapter overlap Trim Galore trims. At 5, fragments 1–4 bp shorter than the read kept adapter on both reads: a hole in the fragment lengths at read length − 4 … − 1 and a spike just above. Single-end runs and libraries with a mate under `TRIM_STRINGENCY_MIN_READ` (50) bp use `TRIM_STRINGENCY_FALLBACK` (5); the choice is logged per library. `5_qc.sh` reports the hole per library (`bamqc/frag_hole_check_mqc.tsv`, MultiQC "Read-length hole"). Tested on all 16 libraries of `seq/cnr/CnR_261006_…` (`analysis/trim_stringency_effect_v1`). |
 | `BT2_PAIR_FLAGS` | `--no-mixed --no-discordant --dovetail -I 10 -X 700` | Concordant-pairs-only alignment (Henikoff / EpiCypher / nf-core recipe). MACS3 BAMPE always used proper pairs only; this makes HOMER tags, bigWigs and FRiP see the same fragments, keeps adapter-remnant dovetails and 500–700 bp di-nucleosome pairs. `BT2_PAIR_FLAGS=""` = the permissive pre-2026-10 behaviour (every project before then). |
 | `TRIM_2COLOUR` | `1` | `--2colour $TRIM_QUAL` (poly-G aware, NovaSeq/NextSeq) instead of `-q`. `0` for 4-colour instruments. |
 | `TRIM_CPU` / `FASTQC_THREADS` | `4` / `8` | Trim Galore `--cores 4` ≈ 15 threads for PE; 8 was ~27, over the node's 16-CPU cap. |
@@ -66,7 +67,7 @@ RUN_TRIM=0 RUN_BOWTIE2=0 RUN_HOMER_TAGS=0 RUN_PEAK_MACS3=0 RUN_PEAK_HOMER=0 RUN_
 
 Also since 2026-10-20: `preseq -P` on PE BAMs; `bamPEFragmentSize` + `estimateReadFiltering` tables; per-control `plotFingerprint --JSDsample` metrics for every distinct control in `peakcall_groups.tsv` (tables in `align/bam/bamqc/fingerprint_metrics_<control>.txt`, kept out of MultiQC because sample names collide across controls); FRiP on the proper-pair universe (`FRiP_properpair`), IP BAM looked up by row name so contrast / `_noctrl` / `_narrow` rows resolve; MACS3 outputs of a row are removed before each call; HOMER `findPeaks` tables are gzipped instead of deleted; MultiQC shows properly-paired %, MQ0 %, insert size and the MACS3 redundancy columns, and ignores `qc/spikein/` and `qc/contam/`. For a sharp histone mark (H3K4me3) add a duplicate row typed `TF` (`<name>_narrow`) to get a MACS3 narrowPeak set next to the `Histone` (broad / HOMER histone-style) call.
 
-**Forks:** `../atac/`, `../csrna/`, `../pro/` carry their own copies of these steps. They received only the `TMPDIR` scratch handling (2026-10-21); the other 2026-10-20 parameter decisions were NOT ported.
+**Forks:** `../atac/`, `../csrna/`, `../pro/` carry their own copies of these steps. They received only the `TMPDIR` scratch handling (2026-10-21); the other 2026-10-20 parameter decisions were NOT ported, and neither was the 2026-11-01 stringency change: in csRNA and PRO-seq the read's 3' end can be the RNA's own end, and ATAC (Nextera, no `--dovetail`) is untested.
 
 ## Requirements
 

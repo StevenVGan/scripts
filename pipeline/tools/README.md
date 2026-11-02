@@ -55,6 +55,7 @@ For generic bigWig heatmaps (peaks / TSS / gene bodies) without Method 2 site-cl
 | **getfasta.sh** | Extract sequences from reference genome for BED regions | `./getfasta.sh [--slop BP] [--no-center] [--tab] OUTPUT.txt INPUT1.bed [INPUT2.bed ...]` |
 | **subsample_data.sh** | Subsample FASTQs (e.g. 1M reads) for testing | Uses `0_config.sh` from `../cnr/` or set `CONFIG_FILE=/path/to/project/0_config.sh`; needs `seqtk` |
 | **igm_manifest.py** | Paste-ready TSVs for the IGM Illumina submission form (info block + 12-column sample table) | `python3 ./igm_manifest.py --info defaults.tsv --info submission.tsv --samples samples.tsv --out-prefix <prefix>` (stdlib only; validates indexes, pools and required cells — see `--help`); private submitter defaults live in `~/work/lab_forms/` |
+| **frag_hole_check.py** | Read-length hole per paired-end library: fragments 1–4 bp shorter than the read that kept adapter (hole at read length − 4 … − 1, spike above); TSV with a MultiQC header, flags hole < 0.8 or spike > 1.2, warns only | Run by `cnr/5_qc.sh`; by hand: `python3 ./frag_hole_check.py --out holes_mqc.tsv [--blacklist BED] [--jobs N] *.bam` (bio env) |
 | **viz/** | Shared figure helpers: `_figure_style.py` (`apply_publication_style()`) + `_profile_plot.py` | Import from here or copy `_figure_style.py` verbatim into an analysis `script/`; see [viz/README.md](viz/README.md) |
 
 ## Examples
