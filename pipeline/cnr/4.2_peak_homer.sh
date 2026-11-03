@@ -21,13 +21,17 @@ shopt -s nullglob
 #
 # Outputs
 #   - ${HOMER_PEAK_DIR}/${name}_peaks_stats.txt or _regions_stats.txt (headers only, for QC)
-#   - ${HOMER_PEAK_DIR}/${name}.annotatePeaks.txt (annotated peaks, blacklist-filtered)
+#   - ${HOMER_PEAK_DIR}/${name}.annotatePeaks.txt (annotated peaks, filtered by PEAK_BLACKLIST; default = BLACKLIST)
 ###############################################################################
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "${SCRIPT_DIR}/0_config.sh"
 
 log_start "4.2_peak_homer"
+
+# Peak-filter BED (2026-10-26, opt-in): same variable and default as 4.1 — a project-set superset of BLACKLIST applied to
+# the peak calls only; unset = BLACKLIST, so every other project is unchanged.
+PEAK_BLACKLIST="${PEAK_BLACKLIST:-${BLACKLIST}}"
 
 check_cmd findPeaks
 check_cmd annotatePeaks.pl
@@ -39,14 +43,19 @@ echo "[INFO] Tag dir:       $TAG_DIR"
 echo "[INFO] HOMER peak dir: $HOMER_PEAK_DIR"
 echo "[INFO] GENOME:        $GENOME"
 echo "[INFO] BLACKLIST:     $BLACKLIST"
+echo "[INFO] PEAK_BLACKLIST (peak filter): $PEAK_BLACKLIST"
 
 if [[ ! -f "$PEAKCALL_GROUPS_FILE" ]]; then
   echo "[ERROR] Groups file not found: $PEAKCALL_GROUPS_FILE"
   exit 1
 fi
 
-if [[ ! -f "$BLACKLIST" ]]; then
-  echo "[WARN] Blacklist not found; will skip blacklist filtering on annotatePeaks."
+if [[ ! -f "$PEAK_BLACKLIST" && "$PEAK_BLACKLIST" != "$BLACKLIST" ]]; then
+  # a project that opted in must not silently fall back to unfiltered calls (e.g. a node without that BED)
+  echo "[ERROR] PEAK_BLACKLIST is set but not found: $PEAK_BLACKLIST (build it, or unset PEAK_BLACKLIST to filter with BLACKLIST)"
+  exit 1
+elif [[ ! -f "$PEAK_BLACKLIST" ]]; then
+  echo "[WARN] Peak blacklist not found: $PEAK_BLACKLIST; will skip blacklist filtering on annotatePeaks."
   SKIP_BLACKLIST=1
 else
   SKIP_BLACKLIST=0
@@ -140,7 +149,7 @@ while IFS=$'\t' read -r ip_spec ctrl_spec name type _rest; do
   kept_tmp=$(mktemp)
   ann_tmp=$(mktemp)
   tail -n +2 "$ann_file" | awk -v OFS='\t' 'NF>=4 {print $2,$3,$4,$1}' | sort -k1,1 -k2,2n \
-    | bedtools intersect -a stdin -b "$BLACKLIST" -v | cut -f4 > "$kept_tmp"
+    | bedtools intersect -a stdin -b "$PEAK_BLACKLIST" -v | cut -f4 > "$kept_tmp"
   head -1 "$ann_file" > "$ann_tmp"
   tail -n +2 "$ann_file" | awk -v kept="$kept_tmp" 'BEGIN{while((getline < kept)>0) k[$1]=1} $1 in k{print}' >> "$ann_tmp"
   mv "$ann_tmp" "$ann_file"

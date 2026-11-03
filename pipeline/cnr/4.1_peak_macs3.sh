@@ -17,7 +17,7 @@ shopt -s nullglob
 #
 # Outputs
 #   - ${MACS3_DIR}/${name}_peaks.narrowPeak or .broadPeak
-#   - ${MACS3_DIR}/${name}_filtered.bed (if blacklist exists)
+#   - ${MACS3_DIR}/${name}_filtered.bed (if PEAK_BLACKLIST exists; default = BLACKLIST)
 #   - ${MACS3_DIR}/${name}.annotatePeaks.txt (HOMER annotatePeaks on filtered BED or peak file)
 ###############################################################################
 
@@ -25,6 +25,11 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "${SCRIPT_DIR}/0_config.sh"
 
 log_start "4.1_peak_macs3"
+
+# Peak-filter BED (2026-10-26, opt-in): a project may set PEAK_BLACKLIST in its 0_config.sh to a superset of BLACKLIST
+# (e.g. v2 + whole chrM/unplaced contigs, CnR_261006 review R-02) that is applied to the peak calls only; bamCoverage and
+# the deepTools QC keep BLACKLIST. Unset = BLACKLIST, so every other project is unchanged.
+PEAK_BLACKLIST="${PEAK_BLACKLIST:-${BLACKLIST}}"
 
 check_cmd_string "$MACS3_CMD"
 check_cmd bedtools
@@ -34,14 +39,19 @@ echo "=== STEP 4.1: MACS3 peak calling + blacklist filtering + annotatePeaks ===
 echo "[INFO] Groups file: $PEAKCALL_GROUPS_FILE"
 echo "[INFO] MACS3 outdir: $MACS3_DIR"
 echo "[INFO] BLACKLIST:    $BLACKLIST"
+echo "[INFO] PEAK_BLACKLIST (peak filter): $PEAK_BLACKLIST"
 
 if [[ ! -f "$PEAKCALL_GROUPS_FILE" ]]; then
   echo "[ERROR] Groups file not found: $PEAKCALL_GROUPS_FILE"
   exit 1
 fi
 
-if [[ ! -f "$BLACKLIST" ]]; then
-  echo "[WARN] Blacklist not found: $BLACKLIST; will skip blacklist filtering."
+if [[ ! -f "$PEAK_BLACKLIST" && "$PEAK_BLACKLIST" != "$BLACKLIST" ]]; then
+  # a project that opted in must not silently fall back to unfiltered calls (e.g. a node without that BED)
+  echo "[ERROR] PEAK_BLACKLIST is set but not found: $PEAK_BLACKLIST (build it, or unset PEAK_BLACKLIST to filter with BLACKLIST)"
+  exit 1
+elif [[ ! -f "$PEAK_BLACKLIST" ]]; then
+  echo "[WARN] Peak blacklist not found: $PEAK_BLACKLIST; will skip blacklist filtering."
   SKIP_BLACKLIST=1
 else
   SKIP_BLACKLIST=0
@@ -109,9 +119,9 @@ while IFS=$'\t' read -r ip_spec ctrl_spec name type _rest; do
 
   if [[ "$SKIP_BLACKLIST" -eq 0 ]]; then
     if [[ -f "$narrowPeak_file" ]]; then
-      bedtools intersect -a "$narrowPeak_file" -b "$BLACKLIST" -v > "$filtered_bed"
+      bedtools intersect -a "$narrowPeak_file" -b "$PEAK_BLACKLIST" -v > "$filtered_bed"
     elif [[ -f "$broadPeak_file" ]]; then
-      bedtools intersect -a "$broadPeak_file" -b "$BLACKLIST" -v > "$filtered_bed"
+      bedtools intersect -a "$broadPeak_file" -b "$PEAK_BLACKLIST" -v > "$filtered_bed"
     fi
   fi
 
