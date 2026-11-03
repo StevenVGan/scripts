@@ -651,6 +651,9 @@ with `md2pdf.sh` since 2026-08-20), `samples.tsv` and `results/`. Raw
 instrument exports and regenerable intermediates are ignored — the list is
 `experiments/.gitignore`, one pattern per line (§3). Design-only experiments
 may add `plasmids/` (SnapGene maps) and `reviews/` (independent review notes).
+Figures in qPCR and gel analyses follow the on-screen standard in `experiments/_lib/README.md`
+(§ Figure standard), with the mechanics in `_lib/qpcr/style.py` and `_lib/gel/`.
+
 Shared code lives in `_lib/`: `qpcr/` must not know any experiment's arms,
 treatments or sample-name grammar; `md2pdf.sh` + `print.{css,html}` render
 Markdown to print-ready PDF (pandoc from `bio` → WeasyPrint from `mdpdf`). A
