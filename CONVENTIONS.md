@@ -32,7 +32,7 @@ filesystem tree, not a single repo). This doc describes how it's
 | Snapshot a final MultiQC report | Copy `multiqc/multiqc_report.html` → `figures/multiqc_YYYY-MM-DD.html`, add manifest row. |
 | Track which env / refs were used | `scripts/env/lock/` for env snapshots; per-project `references.tsv` (auto-emitted) records which were active. |
 | Use PWM motif analysis outputs in a seq project | Add a `dependencies.tsv` row in the seq project. See §7. |
-| Change any tracked conda env | Export-kind env (`bio`, `rna`, `primer`, `pwm2*`): re-export its yml; `vienna` and `globus` with `conda env export --no-builds` (drop the `prefix:` line). Spec-kind (`sc`, `meth`): hand-edit it — never export over it. Snapshot `lock/<env>.<date>.yml` before a major upgrade. See §8. |
+| Change any tracked conda env | Export-kind env (`bio`, `rna`, `primer`, `pwm2*`): re-export its yml; `vienna`, `globus` and `contam` with `conda env export --no-builds` (drop the `prefix:` line). Spec-kind (`sc`, `meth`): hand-edit it — never export over it. Snapshot `lock/<env>.<date>.yml` before a major upgrade. See §8. |
 | Run an existing project's pipeline | `cd seq/.../<project>/script && ./run_all.sh`. Toggles via env (e.g. `RUN_TRIM=0 ./run_all.sh`). |
 | Compare fragment lengths, or tracks built from fragments, across sequencing batches | Re-trim and re-align every batch with one recipe first (the current `cnr` defaults), beside the originals (`script_r2/` and `*_r2/` outputs; old BAMs stay until sign-off), and read each library's `bamqc/frag_hole_check_mqc.tsv`. The `cnr` recipe changed on 2026-10-20 (pairing flags) and 2026-11-01 (trim stringency 5 → 1), and both changes show in fragment lengths. Peaks and motifs within one batch need no re-run unless the analysis reads fragment lengths. |
 | Make a change to a pipeline (`scripts/pipeline/<assay>/`) | Edit the source here. Per-project copies are stale by design until they're refreshed. |
@@ -45,7 +45,7 @@ filesystem tree, not a single repo). This doc describes how it's
 ```
 ~/work/
 ├── scripts/                # GIT REPO (source-of-truth pipelines + tools)
-│   ├── env/                # conda env tracking: bio rna sc meth primer pwm2 pwm2-pb vienna globus (+ lock/<env>.<date>.yml) — §8
+│   ├── env/                # conda env tracking: bio rna sc meth primer pwm2 pwm2-pb vienna globus contam (+ lock/<env>.<date>.yml) — §8
 │   ├── setup/              # new_project.sh scaffolder, gitall.sh, check_env_drift.sh, clone_all.sh, sync_brain.sh, bootstrap.md
 │   ├── CONVENTIONS.md      # this file
 │   ├── pipeline/
@@ -761,6 +761,7 @@ The envs the shared pipelines and tools depend on are tracked in
 | `pwm2`, `pwm2-pb` | PWM motif analysis | export |
 | `vienna` | ViennaRNA folding | export (`--no-builds`) |
 | `globus` | globus-cli behind `tools/prep/download_igm_fastq_globus.sh` (IGM deliveries) | export (`--no-builds`) |
+| `contam` | contamination screens: Kraken2 + Bracken (PlusPF-16 DB in `~/work/ref/kraken2/`), BLAST, minimap2, seqkit; used by `seq/cnr/CnR_261006_…/analysis/contam_extensive_v1` | export (`--no-builds`) |
 
 Analysis-local envs are not tracked here: `mdpdf` (WeasyPrint behind
 `experiments/_lib/md2pdf.sh`), `erenh_ml` / `ml` / `idr` (joint-analysis

@@ -3,8 +3,8 @@
 This directory tracks the conda environments the workspace depends on, so old
 projects stay reproducible after upgrades. `bio` is the workhorse for the bulk
 pipelines (cutrun, csRNA, proseq, atac) and the shared tools; `sc`, `meth`,
-`rna`, `primer`, `pwm2` / `pwm2-pb`, `vienna` and `globus` serve single-cell, methylome,
-RNA-seq, primer-design, PWM, RNA-folding and IGM-download (globus-cli) work respectively. Analysis-local
+`rna`, `primer`, `pwm2` / `pwm2-pb`, `vienna`, `globus` and `contam` serve single-cell, methylome,
+RNA-seq, primer-design, PWM, RNA-folding, IGM-download (globus-cli) and contamination-screen (Kraken2) work respectively. Analysis-local
 envs that exist on linux01 without a yml here (`mdpdf`, `erenh_ml`, `ml`,
 `idr`, `footprint`) are listed in CONVENTIONS §8; `idrlab` is tracked in
 `IDR_analysis/env/`.
@@ -23,7 +23,7 @@ usually ends with a `prefix:` line; a spec pins almost nothing. (Don't rely on
   carries the reasoning for pinning `setuptools<81` and for replacing
   `ucsc-liftover` with `CrossMap` on glibc 2.23 — an export would erase it.
 - **Export** — `bio.yml`, `rna.yml`, `primer.yml`, `pwm2.yml`, `pwm2-pb.yml`,
-  and `vienna.yml` / `globus.yml` (`conda env export --no-builds` exports: versions
+  and `vienna.yml` / `globus.yml` / `contam.yml` (`conda env export --no-builds` exports: versions
   pinned, no build strings, `prefix:` line dropped — re-export them the same way).
   `conda env export` output: every dependency pinned `name=version=build`, and
   usually a trailing `prefix:` line (`pwm2.yml` has had its stripped, so the
