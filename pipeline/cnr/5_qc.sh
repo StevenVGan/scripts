@@ -292,6 +292,7 @@ fn_ignore_files:          # NB this list REPLACES MultiQC's defaults, so the usu
 fn_ignore_paths:          # local steps keep per-library bowtie2/cutadapt logs here; MultiQC matches those by content
   - "*/qc/spikein/*"
   - "*/qc/contam/*"
+  - "*/analysis/*"        # per-project deep analyses (CONVENTIONS section 11) report for themselves; their intermediates are not pipeline QC
 
 # Module/section order in report (top to bottom). Lower order value = appears earlier.
 # Find section IDs by clicking navigation links in the report (URL shows #section_id).
