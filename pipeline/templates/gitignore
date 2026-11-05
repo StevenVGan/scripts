@@ -85,10 +85,13 @@ matrix_*.gz
 *_control_lambda.bdg
 *_peaks.xls
 
-# Figures are tracked (analysis/<topic>_v<N>/figures/, PDF + PNG; Steven 2026-11-05). A superseded analysis's figures are
+# Figures are tracked (analysis/<topic>_v<N>/figures/, PDF + PNG; Steven 2026-11-05), in subfolders too: the `!` line
+# re-includes figures/qc/, figures/heatmap/ etc. past the heavy-dir rules above. A superseded analysis's figures are
 # untracked: everything retired to analysis/_archive/ by the rule below; one still in place gets its own line,
 # e.g. analysis/<topic>_v1/figures/; in both cases `git rm -r --cached` first, since ignoring never untracks
-# (CONVENTIONS §11). Large per-item batches (one plot per gene/site) are ignored case by case.
+# (CONVENTIONS §11). Large per-item batches (one plot per gene/site) are ignored case by case, by a line placed
+# below the `!` line (a later line wins).
+!analysis/**/figures/**/
 analysis/_archive/**/figures/
 
 # Caches + per-analysis run logs

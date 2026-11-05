@@ -211,7 +211,9 @@ matrix_*.gz
 *_control_lambda.bdg
 *_peaks.xls
 
-# Figures are tracked; a superseded analysis's figures are not (§11). Large per-item batches are ignored case by case.
+# Figures are tracked, in subfolders too (the `!` line re-includes figures/qc/ etc.); a superseded analysis's figures
+# are not (§11). Large per-item batches are ignored case by case, by a line below the `!` line.
+!analysis/**/figures/**/
 analysis/_archive/**/figures/
 
 # Caches + per-analysis run logs
@@ -242,8 +244,10 @@ __pycache__/
 - `analysis/` script files (.sh, .py, .R) and small-text outputs
 - `qc/summary.tsv` (when emitted)
 - `figures/manifest.md` and milestone figures (PDF/PNG/MultiQC HTML snapshots)
-- `analysis/<topic>_v<N>/figures/` of a current analysis: every figure, PDF and PNG (Steven, 2026-11-05). A superseded
-  version's figures are untracked (§11).
+- `analysis/<topic>_v<N>/figures/` of a current analysis: every figure, PDF and PNG (Steven, 2026-11-05), in subfolders
+  too (`figures/qc/`, `figures/heatmap/`: the `!analysis/**/figures/**/` line re-includes them past the heavy-dir rules).
+  A superseded version's figures are untracked (§11). Analysis-level `qc/` and `heatmap/` stay ignored: they hold
+  tables and intermediates (some over 100 MB), so a figure goes in `figures/`.
 
 **Rationale:**
 - Code, config, and small text manifests → tracked. They're the
@@ -936,7 +940,8 @@ analysis/
   moves to `_archive/`, delete its own ignore line. This stops a repo growing with re-renders of dead versions; it does not shrink it.
   Purging them from history (`git filter-repo`, force-push) is a separate call, for a repo nearing GitHub's
   1 GB guideline. Commit milestone renders of a current analysis, not every re-run; large per-item batches
-  (one plot per gene or site) are ignored case by case.
+  (one plot per gene or site) are ignored case by case, by a line below the template's `!analysis/**/figures/**/`
+  line (a later line wins).
 
 ### Doc set inside `analysis/<name>/`
 
