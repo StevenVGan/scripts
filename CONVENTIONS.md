@@ -25,7 +25,7 @@ filesystem tree, not a single repo). This doc describes how it's
 | Set up a bulk RNA-seq project | There is no `scripts/pipeline/rna/` yet. Reference implementation: the one `seq/rna/` project that carries a full `script/` (`ls seq/rna/*/script/2_star.sh`; Trim Galore → STAR → counts → tracks, `rna` env). The next RNA-seq project promotes those steps to `scripts/pipeline/rna/` and adds `rna` to `new_project.sh` before use (§5, §setup). |
 | Run a pipeline that may outlive the session | Detach it: `setsid nohup flock -n <lock> … &`, then poll the lock from a *separate* waiter. See §13. |
 | Start a multi-step in-silico analysis of a project | New dir under `seq/.../P/analysis/<topic>_v1/` with numbered Python steps. See §11. |
-| Materially change an analysis approach (feature set, model, label space) | Bump version: copy `<topic>_v1/` → `<topic>_v2/`, add `Supersedes:` line to v2's README and `Superseded by:` to v1's. See §11. |
+| Materially change an analysis approach (feature set, model, label space) | Bump version: copy `<topic>_v1/` → `<topic>_v2/` (without its `figures/`), add `Supersedes:` line to v2's README and `Superseded by:` to v1's, and untrack v1's figures. See §11. |
 | Hand an artifact from one analysis to another | Pin the producer path in the consumer's `00_config.sh` via env var (e.g. `FOOTPRINT_TSV=...`). See §11. |
 | Set up a multiome or scRNA project | Different toolchain (scanpy/SnapATAC2 in the `sc` env, not `bio`). See §12. |
 | Add a figure to a project repo | Drop in `figures/`, add a row to `figures/manifest.md`. Milestone-only — see §gitignore-rules. |
@@ -158,7 +158,6 @@ analysis/**/tables/
 analysis/**/regions/
 analysis/**/bed/
 analysis/**/tracks_mean/
-analysis/**/figures/
 analysis/**/macs/
 analysis/**/homer/
 analysis/**/data/
@@ -212,11 +211,8 @@ matrix_*.gz
 *_control_lambda.bdg
 *_peaks.xls
 
-# Loose figure outputs scattered at subdir top-level
-analysis/*/figure_*.png
-analysis/*/figure_*.pdf
-analysis/*/*_heatmap.png
-analysis/*/*_profile_*.png
+# Figures are tracked; a superseded analysis's figures are not (§11). Large per-item batches are ignored case by case.
+analysis/_archive/**/figures/
 
 # Caches + per-analysis run logs
 **/bed_cache/
@@ -246,6 +242,8 @@ __pycache__/
 - `analysis/` script files (.sh, .py, .R) and small-text outputs
 - `qc/summary.tsv` (when emitted)
 - `figures/manifest.md` and milestone figures (PDF/PNG/MultiQC HTML snapshots)
+- `analysis/<topic>_v<N>/figures/` of a current analysis: every figure, PDF and PNG (Steven, 2026-11-05). A superseded
+  version's figures are untracked (§11).
 
 **Rationale:**
 - Code, config, and small text manifests → tracked. They're the
@@ -613,7 +611,7 @@ seq/<assay>/<project>/experiments/<name>/
 ├── panel.tsv      # tracked: gene/primer panel, protocol params, or design table
 ├── primers.tsv    # tracked: primer sequences (when designed)
 ├── results/       # tracked: small results tables, summary stats
-├── figures/       # ignored by default (§3) — promote milestones like any project figure
+├── figures/       # tracked: bench figures are primary records (the §11 untrack rule is for analyses only)
 ├── data/, raw/    # IGNORED (§3) — qPCR exports, instrument files, images
 ```
 
@@ -929,6 +927,16 @@ analysis/
   on why. Keeps the live `analysis/` listing readable while preserving the
   dead-end for the record; the `ARCHIVE.md` row also substitutes for a
   `Superseded by:` pointer when the retired dir has no README.
+- **Untrack a superseded version's figures** (Steven, 2026-11-05). Figures are tracked while an analysis is
+  current. When it is superseded, `git rm -r --cached analysis/<topic>_v<N>/figures` and add
+  `analysis/<topic>_v<N>/figures/` to `.gitignore`; once it is retired to `analysis/_archive/`, the template's
+  `analysis/_archive/**/figures/` line covers it (still `git rm --cached` first: ignoring never untracks).
+  The files stay on disk, and in history; record the last commit that holds them (the parent of the
+  untracking commit) in the `Superseded by:` line or the `ARCHIVE.md` row. When an in-place version later
+  moves to `_archive/`, delete its own ignore line. This stops a repo growing with re-renders of dead versions; it does not shrink it.
+  Purging them from history (`git filter-repo`, force-push) is a separate call, for a repo nearing GitHub's
+  1 GB guideline. Commit milestone renders of a current analysis, not every re-run; large per-item batches
+  (one plot per gene or site) are ignored case by case.
 
 ### Doc set inside `analysis/<name>/`
 
@@ -959,7 +967,7 @@ analysis/<topic>_v<N>/
 │   └── run_all.sh             # drives the numbered steps
 ├── data/                      # ignored — intermediate matrices, h5ads
 ├── processed/                 # tracked: small text outputs (TSVs, signatures, BEDs)
-├── figures/                   # tracked: milestone figures only (project's manifest covers them)
+├── figures/                   # tracked: every figure, PDF + PNG; untracked once superseded (below)
 ├── qc/                        # tracked: QC tables for the analysis
 └── logs/                      # ignored
 ```
